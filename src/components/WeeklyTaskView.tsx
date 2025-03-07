@@ -111,30 +111,33 @@ const WeeklyTaskView = ({ currentDate }: WeeklyTaskViewProps) => {
 
   return (
     <Card className="neomorphism border-none mb-6">
-      <CardHeader className="px-6 py-4 flex flex-row items-center justify-between">
+      <CardHeader className={cn(
+        "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3",
+        "px-4 py-3 sm:px-6 sm:py-4"
+      )}>
         <h2 className="text-lg font-semibold tracking-tight">Weekly Tasks</h2>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
           <Input
             placeholder="Add a new weekly task..."
             value={newTaskName}
             onChange={(e) => setNewTaskName(e.target.value)}
-            className="w-64"
+            className="w-full sm:w-64"
             onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
           />
           <Button
             onClick={handleAddTask}
             disabled={!newTaskName.trim()}
             size="sm"
-            className="rounded-full h-9 btn-hover bg-primary text-primary-foreground hover:bg-primary/90"
+            className="rounded-full h-9 btn-hover bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
           >
-            <Plus className="h-4 w-4" />
-            Add
+            <Plus className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Add</span>
           </Button>
         </div>
       </CardHeader>
       
-      <CardContent className="px-6 py-4">
+      <CardContent className="px-2 sm:px-6 py-2 sm:py-4">
         {weeklyTasks.length === 0 ? (
           <div className="py-8 flex flex-col items-center justify-center text-center">
             <div className="rounded-full bg-accent p-3 mb-3">
@@ -148,54 +151,58 @@ const WeeklyTaskView = ({ currentDate }: WeeklyTaskViewProps) => {
         ) : (
           <ScrollArea className={cn(
             "rounded-md",
-            isMobile ? "max-h-[calc(100vh-24rem)]" : "max-h-[calc(100vh-18rem)]"
+            isMobile ? "max-h-[calc(100vh-20rem)]" : "max-h-[calc(100vh-18rem)]"
           )}>
-            <div className="w-full overflow-x-auto">
+            <div className="w-full overflow-x-auto pb-2">
               <table className="w-full">
                 <thead>
                   <tr>
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground text-sm w-64">Task</th>
+                    <th className="text-left py-2 px-2 sm:px-3 font-medium text-muted-foreground text-sm w-32 sm:w-64">Task</th>
                     {weekDates.map((date) => (
-                      <th key={date.toISOString()} className="text-center py-2 px-2 font-medium text-muted-foreground text-sm">
+                      <th key={date.toISOString()} className="text-center py-2 px-1 sm:px-2 font-medium text-muted-foreground text-xs sm:text-sm">
                         <div className="flex flex-col items-center">
-                          <span>{format(date, 'EEE')}</span>
+                          <span>{format(date, isMobile ? 'E' : 'EEE')}</span>
                           <span className="text-xs">{format(date, 'd')}</span>
                         </div>
                       </th>
                     ))}
-                    <th className="w-10"></th>
+                    <th className="w-8 sm:w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {weeklyTasks.map((task) => (
                     <tr key={task.id} className="border-t border-border/40">
-                      <td className="py-3 px-3 font-medium">{task.name}</td>
+                      <td className="py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base break-words">
+                        <div className="max-w-[120px] sm:max-w-full overflow-hidden text-ellipsis">
+                          {task.name}
+                        </div>
+                      </td>
                       {weekDates.map((date) => {
                         const dateStr = format(date, 'yyyy-MM-dd');
                         const isCompleted = task.completedDays.includes(dateStr);
                         return (
-                          <td key={dateStr} className="py-3 px-2 text-center">
+                          <td key={dateStr} className="py-2 sm:py-3 px-1 sm:px-2 text-center">
                             <button
                               onClick={() => handleToggleDay(task.id, dateStr)}
-                              className="mx-auto block transition-all duration-200 hover:scale-110"
+                              className="mx-auto block transition-all duration-200 hover:scale-110 mobile-touch-friendly"
                             >
                               {isCompleted ? (
-                                <CheckCircle className="h-6 w-6 text-primary fill-primary" />
+                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-primary fill-primary" />
                               ) : (
-                                <Circle className="h-6 w-6 text-muted-foreground" />
+                                <Circle className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
                               )}
                             </button>
                           </td>
                         );
                       })}
-                      <td className="py-3 px-2">
+                      <td className="py-2 sm:py-3 px-1 sm:px-2">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-full opacity-40 hover:opacity-100"
+                          className="h-7 w-7 sm:h-8 sm:w-8 rounded-full opacity-70 hover:opacity-100"
                           onClick={() => handleDeleteTask(task.id)}
                         >
-                          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive transition-colors" />
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground hover:text-destructive transition-colors" />
                         </Button>
                       </td>
                     </tr>
