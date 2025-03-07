@@ -1,24 +1,24 @@
 
 import { useState, useEffect } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { WeeklyTask } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle, Circle, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle, Circle, Plus, Trash2, Trophy, Calendar } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { formatDateForDisplay, getWeekDates } from '@/lib/dates';
+import { getWeekDates } from '@/lib/dates';
 
 interface WeeklyTaskViewProps {
   currentDate: Date;
+  onAnalyticsUpdate: () => void;
 }
 
-// Simple in-memory storage for demo purposes
-// In a real app, you'd likely use localStorage or a backend
+// Storage key for weekly tasks
 const STORAGE_KEY = 'weeklyTasks';
 
 const loadWeeklyTasks = (): WeeklyTask[] => {
@@ -39,7 +39,7 @@ const saveWeeklyTasks = (tasks: WeeklyTask[]) => {
   }
 };
 
-const WeeklyTaskView = ({ currentDate }: WeeklyTaskViewProps) => {
+const WeeklyTaskView = ({ currentDate, onAnalyticsUpdate }: WeeklyTaskViewProps) => {
   const [weeklyTasks, setWeeklyTasks] = useState<WeeklyTask[]>([]);
   const [newTaskName, setNewTaskName] = useState('');
   const isMobile = useIsMobile();
@@ -64,6 +64,7 @@ const WeeklyTaskView = ({ currentDate }: WeeklyTaskViewProps) => {
     setWeeklyTasks(updatedTasks);
     saveWeeklyTasks(updatedTasks);
     setNewTaskName('');
+    onAnalyticsUpdate();
     
     toast.success('Weekly task added', {
       description: `"${newTaskName}" has been added to your weekly tasks`,
@@ -94,6 +95,7 @@ const WeeklyTaskView = ({ currentDate }: WeeklyTaskViewProps) => {
     
     setWeeklyTasks(updatedTasks);
     saveWeeklyTasks(updatedTasks);
+    onAnalyticsUpdate();
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -103,6 +105,7 @@ const WeeklyTaskView = ({ currentDate }: WeeklyTaskViewProps) => {
     const updatedTasks = weeklyTasks.filter(t => t.id !== taskId);
     setWeeklyTasks(updatedTasks);
     saveWeeklyTasks(updatedTasks);
+    onAnalyticsUpdate();
     
     toast.info('Task deleted', {
       description: `"${taskToDelete.name}" has been removed from your weekly tasks`,
@@ -151,13 +154,13 @@ const WeeklyTaskView = ({ currentDate }: WeeklyTaskViewProps) => {
         ) : (
           <ScrollArea className={cn(
             "rounded-md",
-            isMobile ? "max-h-[calc(100vh-20rem)]" : "max-h-[calc(100vh-18rem)]"
+            isMobile ? "max-h-[calc(100vh-14rem)]" : "max-h-[calc(100vh-18rem)]"
           )}>
             <div className="w-full overflow-x-auto pb-2">
               <table className="w-full">
                 <thead>
                   <tr>
-                    <th className="text-left py-2 px-2 sm:px-3 font-medium text-muted-foreground text-sm w-32 sm:w-64">Task</th>
+                    <th className="text-left py-2 px-2 sm:px-3 font-medium text-muted-foreground text-sm w-24 sm:w-64">Task</th>
                     {weekDates.map((date) => (
                       <th key={date.toISOString()} className="text-center py-2 px-1 sm:px-2 font-medium text-muted-foreground text-xs sm:text-sm">
                         <div className="flex flex-col items-center">
@@ -169,10 +172,10 @@ const WeeklyTaskView = ({ currentDate }: WeeklyTaskViewProps) => {
                     <th className="w-8 sm:w-10"></th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border/30">
                   {weeklyTasks.map((task) => (
                     <tr key={task.id} className="border-t border-border/40">
-                      <td className="py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base break-words">
+                      <td className="py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base">
                         <div className="max-w-[120px] sm:max-w-full overflow-hidden text-ellipsis">
                           {task.name}
                         </div>

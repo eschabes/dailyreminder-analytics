@@ -1,8 +1,9 @@
 
-import { WeekData } from '@/types';
+import { WeekData, WeeklyTask } from '@/types';
 import { formatDate, generateEmptyWeekData } from './dates';
 
 const STORAGE_KEY = 'weeklyChecklist';
+const WEEKLY_TASKS_KEY = 'weeklyTasks';
 
 export function loadWeekData(startDate: string): WeekData | null {
   try {
@@ -59,6 +60,17 @@ export function getOrCreateWeekData(date: Date): WeekData {
   return newWeekData;
 }
 
+export function loadWeeklyTasks(): WeeklyTask[] {
+  try {
+    const stored = localStorage.getItem(WEEKLY_TASKS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Error loading weekly tasks:', error);
+    return [];
+  }
+}
+
 export function clearAllData(): void {
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(WEEKLY_TASKS_KEY);
 }

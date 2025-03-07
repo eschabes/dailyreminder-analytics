@@ -5,11 +5,11 @@ import AnalyticsPanel from '@/components/AnalyticsPanel';
 import { calculateAnalytics } from '@/lib/dates';
 import { loadAllWeekData } from '@/lib/storage';
 import { AnalyticsData } from '@/types';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { LineChart, CheckSquare } from 'lucide-react';
+import { CheckSquare, LineChart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData>({
@@ -20,7 +20,8 @@ const Index = () => {
     leastProductiveDay: null,
     weeklyTrend: [],
   });
-  const [activeTab, setActiveTab] = useState<string>("checklist");
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const isMobile = useIsMobile();
 
   const updateAnalytics = () => {
     const allWeekData = loadAllWeekData();
@@ -41,50 +42,37 @@ const Index = () => {
             <span>WeeklyTrack</span>
           </Link>
           
-          <Tabs 
-            value={activeTab} 
-            onValueChange={setActiveTab}
-            className="w-auto"
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAnalytics(!showAnalytics)}
+            className="flex items-center gap-1"
           >
-            <TabsList className="grid grid-cols-2 w-[220px] h-10 bg-muted/60 p-1">
-              <TabsTrigger 
-                value="checklist" 
-                className={cn(
-                  "font-medium text-sm flex items-center justify-center",
-                  "data-[state=active]:shadow-none data-[state=active]:bg-background"
-                )}
-              >
-                <CheckSquare className="h-4 w-4 mr-1" />
-                Checklist
-              </TabsTrigger>
-              <TabsTrigger 
-                value="analytics"
-                className={cn(
-                  "font-medium text-sm flex items-center justify-center",
-                  "data-[state=active]:shadow-none data-[state=active]:bg-background"
-                )}
-              >
-                <LineChart className="h-4 w-4 mr-1" />
-                Analytics
-              </TabsTrigger>
-            </TabsList>
-          
-            <TabsContent value="checklist" className="mt-0 outline-none">
-              <div className="w-full animate-fade-in">
-                <WeeklyChecklist onAnalyticsUpdate={updateAnalytics} />
-              </div>
-            </TabsContent>
-            <TabsContent value="analytics" className="mt-0 outline-none">
-              <div className="w-full animate-fade-in">
-                <AnalyticsPanel analytics={analytics} />
-              </div>
-            </TabsContent>
-          </Tabs>
+            {showAnalytics ? (
+              <>
+                <CheckSquare className="h-4 w-4" />
+                <span className={cn("", {"hidden": isMobile})}>Tasks</span>
+              </>
+            ) : (
+              <>
+                <LineChart className="h-4 w-4" />
+                <span className={cn("", {"hidden": isMobile})}>Analytics</span>
+              </>
+            )}
+          </Button>
         </div>
       </header>
       
       <main className="w-full max-w-5xl mx-auto px-4 mt-6 flex-1">
-        {/* The content is now rendered inside the TabsContent within the Tabs component */}
+        {showAnalytics ? (
+          <div className="animate-fade-in">
+            <AnalyticsPanel analytics={analytics} />
+          </div>
+        ) : (
+          <div className="animate-fade-in">
+            <WeeklyChecklist onAnalyticsUpdate={updateAnalytics} />
+          </div>
+        )}
       </main>
     </div>
   );
