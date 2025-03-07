@@ -68,21 +68,23 @@ const Index = () => {
                 Analytics
               </TabsTrigger>
             </TabsList>
+          
+            <TabsContent value="checklist" className="mt-0 outline-none">
+              <div className="w-full animate-fade-in">
+                <WeeklyChecklist onAnalyticsUpdate={updateAnalytics} />
+              </div>
+            </TabsContent>
+            <TabsContent value="analytics" className="mt-0 outline-none">
+              <div className="w-full animate-fade-in">
+                <AnalyticsPanel analytics={analytics} />
+              </div>
+            </TabsContent>
           </Tabs>
         </div>
       </header>
       
       <main className="w-full max-w-5xl mx-auto px-4 mt-6 flex-1">
-        <TabsContent value="checklist" className="mt-0 outline-none">
-          <div className="w-full animate-fade-in">
-            <WeeklyChecklist onAnalyticsUpdate={updateAnalytics} />
-          </div>
-        </TabsContent>
-        <TabsContent value="analytics" className="mt-0 outline-none">
-          <div className="w-full animate-fade-in">
-            <AnalyticsPanel analytics={analytics} />
-          </div>
-        </TabsContent>
+        {/* The content is now rendered inside the TabsContent within the Tabs component */}
       </main>
     </div>
   );
