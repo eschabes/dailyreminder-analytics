@@ -1,4 +1,5 @@
 
+
 export interface ChecklistItem {
   id: string;
   name: string;
@@ -28,3 +29,12 @@ export interface AnalyticsData {
     completionRate: number;
   }[];
 }
+
+export interface WeeklyTask {
+  id: string;
+  name: string;
+  completedDays: string[]; // Array of ISO date strings for days the task was completed
+  createdAt: string;
+  updatedAt: string;
+}
+

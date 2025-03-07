@@ -24,6 +24,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import WeekNavigation from './WeekNavigation';
 import ChecklistItem from './ChecklistItem';
 import AddItemDialog from './AddItemDialog';
+import WeeklyTaskView from './WeeklyTaskView';
 import { cn } from '@/lib/utils';
 
 interface WeeklyChecklistProps {
@@ -36,6 +37,7 @@ const WeeklyChecklist = ({ onAnalyticsUpdate }: WeeklyChecklistProps) => {
   const [activeDay, setActiveDay] = useState<string>('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const isMobile = useIsMobile();
 
   // Load week data
@@ -183,114 +185,131 @@ const WeeklyChecklist = ({ onAnalyticsUpdate }: WeeklyChecklistProps) => {
         onCurrentWeek={handleCurrentWeek}
       />
       
-      <Tabs 
-        value={activeDay} 
-        onValueChange={setActiveDay}
-        className="w-full"
-      >
-        <div className="relative">
-          <ScrollArea className="w-full">
-            <TabsList className="w-full justify-start md:justify-center p-1 bg-transparent">
-              {weekData.days.map((day, index) => {
-                const date = parseISO(day.date);
-                const dayName = format(date, 'EEE');
-                const dayNumber = format(date, 'd');
-                const progress = getDayProgress(day);
-                const hasItems = day.items.length > 0;
-                const allCompleted = hasItems && getCompletedCount(day) === day.items.length;
-                
-                return (
-                  <TabsTrigger
-                    key={day.date}
-                    value={day.date}
-                    className={cn(
-                      "flex flex-col items-center space-y-1 py-2 px-4 relative min-w-[70px]",
-                      "data-[state=active]:bg-accent/50 data-[state=active]:shadow-none",
-                      "hover:bg-accent/30 transition-all duration-300"
-                    )}
-                  >
-                    {allCompleted && hasItems && (
-                      <CheckCircle 
-                        className="h-3 w-3 absolute top-1 right-1 text-primary" 
-                        strokeWidth={3}
-                      />
-                    )}
-                    <span className="text-xs font-medium text-muted-foreground">{dayName}</span>
-                    <span className="text-base font-bold">{dayNumber}</span>
-                    {hasItems && (
-                      <div className="w-full h-1 bg-muted/60 rounded-full mt-1 overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full transition-all duration-500 ease-out",
-                            progress === 100 ? "bg-primary" : "bg-muted-foreground/60"
-                          )}
-                          style={{ width: `${progress}%` }}
+      <div className="flex justify-center mb-4">
+        <Tabs
+          value={viewMode}
+          onValueChange={(value) => setViewMode(value as 'daily' | 'weekly')}
+          className="w-auto"
+        >
+          <TabsList className="grid grid-cols-2 w-[200px]">
+            <TabsTrigger value="daily">Daily View</TabsTrigger>
+            <TabsTrigger value="weekly">Weekly View</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+      
+      {viewMode === 'weekly' ? (
+        <WeeklyTaskView currentDate={currentDate} />
+      ) : (
+        <Tabs 
+          value={activeDay} 
+          onValueChange={setActiveDay}
+          className="w-full"
+        >
+          <div className="relative">
+            <ScrollArea className="w-full">
+              <TabsList className="w-full justify-start md:justify-center p-1 bg-transparent">
+                {weekData.days.map((day, index) => {
+                  const date = parseISO(day.date);
+                  const dayName = format(date, 'EEE');
+                  const dayNumber = format(date, 'd');
+                  const progress = getDayProgress(day);
+                  const hasItems = day.items.length > 0;
+                  const allCompleted = hasItems && getCompletedCount(day) === day.items.length;
+                  
+                  return (
+                    <TabsTrigger
+                      key={day.date}
+                      value={day.date}
+                      className={cn(
+                        "flex flex-col items-center space-y-1 py-2 px-4 relative min-w-[70px]",
+                        "data-[state=active]:bg-accent/50 data-[state=active]:shadow-none",
+                        "hover:bg-accent/30 transition-all duration-300"
+                      )}
+                    >
+                      {allCompleted && hasItems && (
+                        <CheckCircle 
+                          className="h-3 w-3 absolute top-1 right-1 text-primary" 
+                          strokeWidth={3}
                         />
-                      </div>
-                    )}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </ScrollArea>
-        </div>
-        
-        {weekData.days.map((day) => (
-          <TabsContent key={day.date} value={day.date} className="mt-4 outline-none ring-0">
-            <Card className="neomorphism border-none overflow-hidden">
-              <CardHeader className="px-6 py-4 flex flex-row items-center justify-between">
-                <div className="space-y-0.5">
-                  <h3 className="text-lg font-semibold tracking-tight">
-                    {format(parseISO(day.date), 'EEEE')}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDateForDisplay(parseISO(day.date))}
-                  </p>
-                </div>
-                <Button
-                  onClick={() => openAddDialog(parseISO(day.date))}
-                  className="rounded-full h-9 px-4 btn-hover bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Plus className="mr-1 h-4 w-4" />
-                  Add Task
-                </Button>
-              </CardHeader>
-              
-              <CardContent className="px-6 py-4">
-                <ScrollArea className={cn(
-                  "rounded-md",
-                  isMobile ? "max-h-[calc(100vh-24rem)]" : "max-h-[calc(100vh-18rem)]"
-                )}>
-                  <div className="space-y-1 pb-4">
-                    {day.items.length === 0 ? (
-                      <div className="py-8 flex flex-col items-center justify-center text-center">
-                        <div className="rounded-full bg-accent p-3 mb-3">
-                          <Plus className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <h3 className="text-base font-medium mb-1">No Tasks Yet</h3>
-                        <p className="text-sm text-muted-foreground max-w-xs">
-                          Add tasks to track your progress for {format(parseISO(day.date), 'EEEE')}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {day.items.map((item) => (
-                          <ChecklistItem
-                            key={item.id}
-                            item={item}
-                            onToggleComplete={(id) => handleToggleComplete(day.date, id)}
-                            onDelete={(id) => handleDeleteItem(day.date, id)}
+                      )}
+                      <span className="text-xs font-medium text-muted-foreground">{dayName}</span>
+                      <span className="text-base font-bold">{dayNumber}</span>
+                      {hasItems && (
+                        <div className="w-full h-1 bg-muted/60 rounded-full mt-1 overflow-hidden">
+                          <div 
+                            className={cn(
+                              "h-full transition-all duration-500 ease-out",
+                              progress === 100 ? "bg-primary" : "bg-muted-foreground/60"
+                            )}
+                            style={{ width: `${progress}%` }}
                           />
-                        ))}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+            </ScrollArea>
+          </div>
+          
+          {weekData.days.map((day) => (
+            <TabsContent key={day.date} value={day.date} className="mt-4 outline-none ring-0">
+              <Card className="neomorphism border-none overflow-hidden">
+                <CardHeader className="px-6 py-4 flex flex-row items-center justify-between">
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg font-semibold tracking-tight">
+                      {format(parseISO(day.date), 'EEEE')}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDateForDisplay(parseISO(day.date))}
+                    </p>
                   </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
-      </Tabs>
+                  <Button
+                    onClick={() => openAddDialog(parseISO(day.date))}
+                    className="rounded-full h-9 px-4 btn-hover bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    Add Task
+                  </Button>
+                </CardHeader>
+                
+                <CardContent className="px-6 py-4">
+                  <ScrollArea className={cn(
+                    "rounded-md",
+                    isMobile ? "max-h-[calc(100vh-24rem)]" : "max-h-[calc(100vh-18rem)]"
+                  )}>
+                    <div className="space-y-1 pb-4">
+                      {day.items.length === 0 ? (
+                        <div className="py-8 flex flex-col items-center justify-center text-center">
+                          <div className="rounded-full bg-accent p-3 mb-3">
+                            <Plus className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                          <h3 className="text-base font-medium mb-1">No Tasks Yet</h3>
+                          <p className="text-sm text-muted-foreground max-w-xs">
+                            Add tasks to track your progress for {format(parseISO(day.date), 'EEEE')}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          {day.items.map((item) => (
+                            <ChecklistItem
+                              key={item.id}
+                              item={item}
+                              onToggleComplete={(id) => handleToggleComplete(day.date, id)}
+                              onDelete={(id) => handleDeleteItem(day.date, id)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
       
       <AddItemDialog
         isOpen={isAddDialogOpen}
