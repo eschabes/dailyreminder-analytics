@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData>({
@@ -20,7 +21,7 @@ const Index = () => {
     leastProductiveDay: null,
     weeklyTrend: [],
   });
-  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [activeView, setActiveView] = useState<'tasks' | 'analytics'>('tasks');
   const isMobile = useIsMobile();
 
   const updateAnalytics = () => {
@@ -42,29 +43,31 @@ const Index = () => {
             <span>WeeklyTrack</span>
           </Link>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAnalytics(!showAnalytics)}
-            className="flex items-center gap-1"
-          >
-            {showAnalytics ? (
-              <>
-                <CheckSquare className="h-4 w-4" />
-                <span className={cn("", {"hidden": isMobile})}>Tasks</span>
-              </>
-            ) : (
-              <>
-                <LineChart className="h-4 w-4" />
-                <span className={cn("", {"hidden": isMobile})}>Analytics</span>
-              </>
-            )}
-          </Button>
+          <div className="flex space-x-2">
+            <Button
+              variant={activeView === 'tasks' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveView('tasks')}
+              className="flex items-center gap-1"
+            >
+              <CheckSquare className="h-4 w-4" />
+              <span className={cn("", {"hidden": isMobile})}>Tasks</span>
+            </Button>
+            <Button
+              variant={activeView === 'analytics' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveView('analytics')}
+              className="flex items-center gap-1"
+            >
+              <LineChart className="h-4 w-4" />
+              <span className={cn("", {"hidden": isMobile})}>Analytics</span>
+            </Button>
+          </div>
         </div>
       </header>
       
       <main className="w-full max-w-5xl mx-auto px-4 mt-6 flex-1">
-        {showAnalytics ? (
+        {activeView === 'analytics' ? (
           <div className="animate-fade-in">
             <AnalyticsPanel analytics={analytics} />
           </div>

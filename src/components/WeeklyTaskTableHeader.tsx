@@ -26,7 +26,7 @@ const WeeklyTaskTableHeader = ({ weekDates, isMobile }: WeeklyTaskTableHeaderPro
             key={date.toISOString()} 
             className={cn(
               "text-center py-2 px-1 sm:px-2 font-medium text-xs sm:text-sm",
-              isToday(format(date, 'yyyy-MM-dd')) ? "bg-today-highlight" : ""
+              isToday(format(date, 'yyyy-MM-dd')) ? "bg-muted/60" : ""
             )}
           >
             <div className="flex flex-col items-center">
