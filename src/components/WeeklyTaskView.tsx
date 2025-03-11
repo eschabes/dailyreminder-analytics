@@ -5,13 +5,14 @@ import { WeeklyTask } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle, Circle, Plus, Trash2, Trophy, Calendar } from 'lucide-react';
+import { CheckCircle, Circle, Plus, Trash2, GripVertical } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getWeekDates } from '@/lib/dates';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
 interface WeeklyTaskViewProps {
   currentDate: Date;
@@ -112,6 +113,18 @@ const WeeklyTaskView = ({ currentDate, onAnalyticsUpdate }: WeeklyTaskViewProps)
     });
   };
 
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(weeklyTasks);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    setWeeklyTasks(items);
+    saveWeeklyTasks(items);
+    onAnalyticsUpdate();
+  };
+
   return (
     <Card className="neomorphism border-none mb-6">
       <CardHeader className={cn(
@@ -157,61 +170,85 @@ const WeeklyTaskView = ({ currentDate, onAnalyticsUpdate }: WeeklyTaskViewProps)
             isMobile ? "max-h-[calc(100vh-14rem)]" : "max-h-[calc(100vh-18rem)]"
           )}>
             <div className="w-full overflow-x-auto pb-2">
-              <table className="w-full">
-                <thead>
-                  <tr>
-                    <th className="text-left py-2 px-2 sm:px-3 font-medium text-muted-foreground text-sm w-24 sm:w-64">Task</th>
-                    {weekDates.map((date) => (
-                      <th key={date.toISOString()} className="text-center py-2 px-1 sm:px-2 font-medium text-muted-foreground text-xs sm:text-sm">
-                        <div className="flex flex-col items-center">
-                          <span>{format(date, isMobile ? 'E' : 'EEE')}</span>
-                          <span className="text-xs">{format(date, 'd')}</span>
-                        </div>
-                      </th>
-                    ))}
-                    <th className="w-8 sm:w-10"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/30">
-                  {weeklyTasks.map((task) => (
-                    <tr key={task.id} className="border-t border-border/40">
-                      <td className="py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base">
-                        <div className="max-w-[120px] sm:max-w-full overflow-hidden text-ellipsis">
-                          {task.name}
-                        </div>
-                      </td>
-                      {weekDates.map((date) => {
-                        const dateStr = format(date, 'yyyy-MM-dd');
-                        const isCompleted = task.completedDays.includes(dateStr);
-                        return (
-                          <td key={dateStr} className="py-2 sm:py-3 px-1 sm:px-2 text-center">
-                            <button
-                              onClick={() => handleToggleDay(task.id, dateStr)}
-                              className="mx-auto block transition-all duration-200 hover:scale-110 mobile-touch-friendly"
-                            >
-                              {isCompleted ? (
-                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-primary fill-primary" />
-                              ) : (
-                                <Circle className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
-                              )}
-                            </button>
-                          </td>
-                        );
-                      })}
-                      <td className="py-2 sm:py-3 px-1 sm:px-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 sm:h-8 sm:w-8 rounded-full opacity-70 hover:opacity-100"
-                          onClick={() => handleDeleteTask(task.id)}
-                        >
-                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground hover:text-destructive transition-colors" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="tasks">
+                  {(provided) => (
+                    <table className="w-full" {...provided.droppableProps} ref={provided.innerRef}>
+                      <thead>
+                        <tr>
+                          <th className="w-8"></th>
+                          <th className="text-left py-2 px-2 sm:px-3 font-medium text-muted-foreground text-sm w-24 sm:w-64">Task</th>
+                          {weekDates.map((date) => (
+                            <th key={date.toISOString()} className="text-center py-2 px-1 sm:px-2 font-medium text-muted-foreground text-xs sm:text-sm">
+                              <div className="flex flex-col items-center">
+                                <span>{format(date, isMobile ? 'E' : 'EEE')}</span>
+                                <span className="text-xs">{format(date, 'd')}</span>
+                              </div>
+                            </th>
+                          ))}
+                          <th className="w-8 sm:w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/30">
+                        {weeklyTasks.map((task, index) => (
+                          <Draggable key={task.id} draggableId={task.id} index={index}>
+                            {(provided) => (
+                              <tr 
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className="border-t border-border/40"
+                              >
+                                <td className="w-8 py-2 px-1">
+                                  <div
+                                    {...provided.dragHandleProps}
+                                    className="flex items-center justify-center h-full cursor-grab active:cursor-grabbing"
+                                  >
+                                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                </td>
+                                <td className="py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base">
+                                  <div className="max-w-[120px] sm:max-w-full overflow-hidden text-ellipsis">
+                                    {task.name}
+                                  </div>
+                                </td>
+                                {weekDates.map((date) => {
+                                  const dateStr = format(date, 'yyyy-MM-dd');
+                                  const isCompleted = task.completedDays.includes(dateStr);
+                                  return (
+                                    <td key={dateStr} className="py-2 sm:py-3 px-1 sm:px-2 text-center">
+                                      <button
+                                        onClick={() => handleToggleDay(task.id, dateStr)}
+                                        className="mx-auto block transition-all duration-200 hover:scale-110 mobile-touch-friendly"
+                                      >
+                                        {isCompleted ? (
+                                          <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-primary fill-primary" />
+                                        ) : (
+                                          <Circle className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+                                        )}
+                                      </button>
+                                    </td>
+                                  );
+                                })}
+                                <td className="py-2 sm:py-3 px-1 sm:px-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 sm:h-8 sm:w-8 rounded-full opacity-70 hover:opacity-100"
+                                    onClick={() => handleDeleteTask(task.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground hover:text-destructive transition-colors" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </tbody>
+                    </table>
+                  )}
+                </Droppable>
+              </DragDropContext>
             </div>
           </ScrollArea>
         )}
