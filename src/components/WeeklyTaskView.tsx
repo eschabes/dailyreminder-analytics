@@ -133,6 +133,29 @@ const WeeklyTaskView = ({ currentDate, onAnalyticsUpdate }: WeeklyTaskViewProps)
     });
   };
 
+  const handleUpdateTaskName = (taskId: string, newName: string) => {
+    if (!newName.trim()) return;
+    
+    const updatedTasks = weeklyTasks.map(task => {
+      if (task.id === taskId) {
+        return {
+          ...task,
+          name: newName.trim(),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return task;
+    });
+    
+    setWeeklyTasks(updatedTasks);
+    saveWeeklyTasks(updatedTasks);
+    onAnalyticsUpdate();
+    
+    toast.success('Task updated', {
+      description: `Task name changed to "${newName.trim()}"`,
+    });
+  };
+
   const handleExportToExcel = () => {
     exportTasksToExcel(weeklyTasks);
     toast.success('Export successful', {
@@ -173,6 +196,7 @@ const WeeklyTaskView = ({ currentDate, onAnalyticsUpdate }: WeeklyTaskViewProps)
           onToggleDay={handleToggleDay}
           onDeleteTask={handleDeleteTask}
           onUpdateInterval={handleUpdateInterval}
+          onUpdateTaskName={handleUpdateTaskName}
           onDragEnd={handleDragEnd}
         />
       </CardContent>

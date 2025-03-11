@@ -14,6 +14,7 @@ interface WeeklyTaskListProps {
   onToggleDay: (taskId: string, dateStr: string) => void;
   onDeleteTask: (taskId: string) => void;
   onUpdateInterval: (taskId: string, interval: string) => void;
+  onUpdateTaskName: (taskId: string, newName: string) => void;
   onDragEnd: (result: DropResult) => void;
 }
 
@@ -24,6 +25,7 @@ const WeeklyTaskList = ({
   onToggleDay,
   onDeleteTask,
   onUpdateInterval,
+  onUpdateTaskName,
   onDragEnd
 }: WeeklyTaskListProps) => {
   if (weeklyTasks.length === 0) {
@@ -61,6 +63,7 @@ const WeeklyTaskList = ({
                       onToggleDay={onToggleDay}
                       onDeleteTask={onDeleteTask}
                       onUpdateInterval={onUpdateInterval}
+                      onUpdateTaskName={onUpdateTaskName}
                     />
                   ))}
                   {provided.placeholder}

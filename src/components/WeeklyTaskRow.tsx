@@ -3,12 +3,18 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { WeeklyTask } from '@/types';
 import { Draggable } from 'react-beautiful-dnd';
-import { CheckCircle, Circle, Trash2, GripVertical } from 'lucide-react';
+import { CheckCircle, Circle, Trash2, GripVertical, X, Check, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { getDaysSinceLastCompletion, getTaskStatusColor, isToday } from '@/lib/task-analytics';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface WeeklyTaskRowProps {
   task: WeeklyTask;
@@ -17,6 +23,7 @@ interface WeeklyTaskRowProps {
   onToggleDay: (taskId: string, dateStr: string) => void;
   onDeleteTask: (taskId: string) => void;
   onUpdateInterval: (taskId: string, interval: string) => void;
+  onUpdateTaskName: (taskId: string, newName: string) => void;
 }
 
 const WeeklyTaskRow = ({ 
@@ -25,17 +32,30 @@ const WeeklyTaskRow = ({
   weekDates, 
   onToggleDay, 
   onDeleteTask, 
-  onUpdateInterval 
+  onUpdateInterval,
+  onUpdateTaskName
 }: WeeklyTaskRowProps) => {
-  const [taskBeingEdited, setTaskBeingEdited] = useState<string | null>(null);
-  const [taskInterval, setTaskInterval] = useState<string>('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(task.name);
+  const [editedInterval, setEditedInterval] = useState(task.interval?.toString() || '');
   const daysSince = getDaysSinceLastCompletion(task);
   const statusColor = getTaskStatusColor(daysSince, task.interval);
 
-  const handleUpdateInterval = (taskId: string, interval: string) => {
-    onUpdateInterval(taskId, interval);
-    setTaskBeingEdited(null);
-    setTaskInterval('');
+  const handleSave = () => {
+    // Update name if it changed and is not empty
+    if (editedName.trim() !== task.name && editedName.trim() !== '') {
+      onUpdateTaskName(task.id, editedName);
+    }
+    
+    // Update interval
+    onUpdateInterval(task.id, editedInterval);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedName(task.name);
+    setEditedInterval(task.interval?.toString() || '');
+    setIsEditing(false);
   };
 
   return (
@@ -56,56 +76,96 @@ const WeeklyTaskRow = ({
           </td>
           <td 
             className={cn(
-              "py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base",
+              "py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base relative",
               statusColor
             )}
           >
-            <div className="max-w-[100px] sm:max-w-full overflow-hidden text-ellipsis">
+            <div 
+              className="max-w-[100px] sm:max-w-full overflow-hidden text-ellipsis cursor-pointer flex items-center"
+              onClick={() => setIsEditing(true)}
+            >
               {task.name}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Pencil className="h-3 w-3 ml-1 text-muted-foreground opacity-50" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Edit task</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
+            
+            {isEditing && (
+              <div className="absolute z-10 top-full left-0 mt-1 bg-popover border border-border rounded-md shadow-md p-3 w-64">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">Task Name</label>
+                    <Input
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">
+                      Interval (days)
+                      {task.interval && (
+                        <span className="text-muted-foreground ml-1">
+                          {task.interval} days
+                        </span>
+                      )}
+                    </label>
+                    <Input
+                      value={editedInterval}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^\d]/g, '');
+                        setEditedInterval(value);
+                      }}
+                      className="h-8 text-sm"
+                      placeholder="Days between completions"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-7 px-2 text-xs"
+                      onClick={handleCancel}
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="h-7 px-2 text-xs"
+                      onClick={handleSave}
+                    >
+                      <Check className="h-3 w-3 mr-1" />
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </td>
           <td className="py-2 px-1 text-center text-xs">
             {daysSince !== null ? (
-              <Badge variant="outline" className="text-xs">
-                {daysSince}
-              </Badge>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="text-xs">
+                      {daysSince}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Days since last completion</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             ) : (
               <span className="text-muted-foreground text-xs">-</span>
-            )}
-          </td>
-          <td className="py-2 px-1 text-center">
-            {taskBeingEdited === task.id ? (
-              <div className="flex items-center justify-center">
-                <Input
-                  value={taskInterval}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^\d]/g, '');
-                    setTaskInterval(value);
-                  }}
-                  className="w-12 h-7 text-xs text-center p-1"
-                  autoFocus
-                  onBlur={() => handleUpdateInterval(task.id, taskInterval)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleUpdateInterval(task.id, taskInterval);
-                    } else if (e.key === 'Escape') {
-                      setTaskBeingEdited(null);
-                      setTaskInterval('');
-                    }
-                  }}
-                />
-              </div>
-            ) : (
-              <Badge 
-                variant="outline" 
-                className="cursor-pointer text-xs"
-                onClick={() => {
-                  setTaskBeingEdited(task.id);
-                  setTaskInterval(task.interval?.toString() || '');
-                }}
-              >
-                {task.interval || '-'}
-              </Badge>
             )}
           </td>
           {weekDates.map((date) => {

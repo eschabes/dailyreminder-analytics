@@ -1,6 +1,6 @@
 
 import { format } from 'date-fns';
-import { Clock, Calendar } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isToday } from '@/lib/task-analytics';
 
@@ -19,12 +19,6 @@ const WeeklyTaskTableHeader = ({ weekDates, isMobile }: WeeklyTaskTableHeaderPro
           <div className="flex items-center justify-center gap-1">
             <Clock className="h-3 w-3" />
             <span>Days</span>
-          </div>
-        </th>
-        <th className="text-center py-2 px-1 sm:px-2 font-medium text-muted-foreground text-xs sm:text-sm w-14 sm:w-20">
-          <div className="flex items-center justify-center gap-1">
-            <Calendar className="h-3 w-3" />
-            <span>Int.</span>
           </div>
         </th>
         {weekDates.map((date) => (
