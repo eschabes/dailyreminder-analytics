@@ -1,5 +1,4 @@
 
-
 export interface ChecklistItem {
   id: string;
   name: string;
@@ -36,5 +35,5 @@ export interface WeeklyTask {
   completedDays: string[]; // Array of ISO date strings for days the task was completed
   createdAt: string;
   updatedAt: string;
+  interval?: number; // Number of days until task should be done again
 }
-

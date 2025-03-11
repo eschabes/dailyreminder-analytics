@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -46,6 +45,14 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Task status colors */
+    --soft-green: #F2FCE2;
+    --soft-yellow: #FEF7CD;
+    --soft-red: #FFDEE2;
+    --soft-gray: #F1F0FB;
+    --soft-blue: #D3E4FD;
+    --today-highlight: #E5DEFF;
   }
 
   .dark {
@@ -154,4 +161,29 @@
 
 .btn-hover {
   @apply transition-all duration-200 hover:shadow-md active:scale-95;
+}
+
+/* Status color classes */
+.bg-soft-green {
+  background-color: var(--soft-green);
+}
+
+.bg-soft-yellow {
+  background-color: var(--soft-yellow);
+}
+
+.bg-soft-red {
+  background-color: var(--soft-red);
+}
+
+.bg-soft-gray {
+  background-color: var(--soft-gray);
+}
+
+.bg-soft-blue {
+  background-color: var(--soft-blue);
+}
+
+.bg-today-highlight {
+  background-color: var(--today-highlight);
 }
