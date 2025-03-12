@@ -7,9 +7,16 @@ import { isToday } from '@/lib/task-analytics';
 interface WeeklyTaskTableHeaderProps {
   weekDates: Date[];
   isMobile: boolean;
+  selectedDate: string | null;
+  onSelectDate: (dateStr: string | null) => void;
 }
 
-const WeeklyTaskTableHeader = ({ weekDates, isMobile }: WeeklyTaskTableHeaderProps) => {
+const WeeklyTaskTableHeader = ({ 
+  weekDates, 
+  isMobile, 
+  selectedDate, 
+  onSelectDate 
+}: WeeklyTaskTableHeaderProps) => {
   return (
     <thead>
       <tr>
@@ -21,20 +28,29 @@ const WeeklyTaskTableHeader = ({ weekDates, isMobile }: WeeklyTaskTableHeaderPro
             <span>Days</span>
           </div>
         </th>
-        {weekDates.map((date) => (
-          <th 
-            key={date.toISOString()} 
-            className={cn(
-              "text-center py-2 px-1 sm:px-2 font-medium text-xs sm:text-sm",
-              isToday(format(date, 'yyyy-MM-dd')) ? "bg-muted/60" : ""
-            )}
-          >
-            <div className="flex flex-col items-center">
-              <span>{format(date, isMobile ? 'E' : 'EEE')}</span>
-              <span className="text-xs">{format(date, 'd')}</span>
-            </div>
-          </th>
-        ))}
+        {weekDates.map((date) => {
+          const dateStr = format(date, 'yyyy-MM-dd');
+          const isCurrentDay = isToday(dateStr);
+          const isSelected = selectedDate === dateStr;
+          
+          return (
+            <th 
+              key={date.toISOString()} 
+              className={cn(
+                "text-center py-2 px-1 sm:px-2 font-medium text-xs sm:text-sm cursor-pointer",
+                isCurrentDay ? "bg-today-highlight" : "",
+                isSelected && !isCurrentDay ? "bg-selected-day" : "",
+                isSelected && isCurrentDay ? "bg-current-selected-day" : ""
+              )}
+              onClick={() => onSelectDate(dateStr === selectedDate ? null : dateStr)}
+            >
+              <div className="flex flex-col items-center">
+                <span>{format(date, isMobile ? 'E' : 'EEE')}</span>
+                <span className="text-xs">{format(date, 'd')}</span>
+              </div>
+            </th>
+          );
+        })}
         <th className="w-8 sm:w-10"></th>
       </tr>
     </thead>

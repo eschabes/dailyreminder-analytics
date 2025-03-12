@@ -20,6 +20,7 @@ interface WeeklyTaskRowProps {
   task: WeeklyTask;
   index: number;
   weekDates: Date[];
+  selectedDate: string | null;
   onToggleDay: (taskId: string, dateStr: string) => void;
   onDeleteTask: (taskId: string) => void;
   onUpdateInterval: (taskId: string, interval: string) => void;
@@ -30,6 +31,7 @@ const WeeklyTaskRow = ({
   task, 
   index, 
   weekDates, 
+  selectedDate,
   onToggleDay, 
   onDeleteTask, 
   onUpdateInterval,
@@ -38,7 +40,14 @@ const WeeklyTaskRow = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(task.name);
   const [editedInterval, setEditedInterval] = useState(task.interval?.toString() || '');
-  const daysSince = getDaysSinceLastCompletion(task);
+  
+  // Use the selected date if available, otherwise use the normal calculation
+  const daysSince = selectedDate 
+    ? (task.completedDays.includes(selectedDate) 
+        ? 0 
+        : getDaysSinceLastCompletion(task, selectedDate))
+    : getDaysSinceLastCompletion(task);
+    
   const statusColor = getTaskStatusColor(daysSince, task.interval);
 
   const handleSave = () => {
@@ -172,13 +181,16 @@ const WeeklyTaskRow = ({
             const dateStr = format(date, 'yyyy-MM-dd');
             const isCompleted = task.completedDays.includes(dateStr);
             const isCurrentDay = isToday(dateStr);
+            const isSelectedDay = selectedDate === dateStr;
             
             return (
               <td 
                 key={dateStr} 
                 className={cn(
                   "py-2 sm:py-3 px-1 sm:px-2 text-center",
-                  isCurrentDay ? "bg-today-highlight" : ""
+                  isCurrentDay ? "bg-today-highlight" : "",
+                  isSelectedDay && !isCurrentDay ? "bg-selected-day" : "",
+                  isSelectedDay && isCurrentDay ? "bg-current-selected-day" : ""
                 )}
               >
                 <button

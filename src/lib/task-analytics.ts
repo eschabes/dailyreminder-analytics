@@ -5,7 +5,7 @@ import { differenceInDays, parseISO, format, isSameDay } from 'date-fns';
 /**
  * Calculate days since last completion of a task
  */
-export function getDaysSinceLastCompletion(task: WeeklyTask): number | null {
+export function getDaysSinceLastCompletion(task: WeeklyTask, referenceDate?: string | null): number | null {
   if (!task.completedDays.length) {
     return null;
   }
@@ -16,9 +16,9 @@ export function getDaysSinceLastCompletion(task: WeeklyTask): number | null {
   );
 
   const lastCompletionDate = parseISO(sortedDays[0]);
-  const today = new Date();
+  const compareDate = referenceDate ? parseISO(referenceDate) : new Date();
   
-  return differenceInDays(today, lastCompletionDate);
+  return differenceInDays(compareDate, lastCompletionDate);
 }
 
 /**
@@ -27,6 +27,10 @@ export function getDaysSinceLastCompletion(task: WeeklyTask): number | null {
 export function getTaskStatusColor(daysSince: number | null, interval: number | undefined): string {
   if (daysSince === null) {
     return 'bg-soft-gray'; // Never completed
+  }
+  
+  if (daysSince === 0) {
+    return 'bg-soft-blue'; // Completed today or on selected day
   }
 
   if (!interval) {

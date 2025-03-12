@@ -86,6 +86,22 @@
   }
 }
 
+/* Landscape mode optimizations */
+@media (max-height: 500px) and (orientation: landscape) {
+  #root {
+    position: relative;
+    overflow-y: auto;
+    height: 100%;
+    padding: 0.5rem;
+  }
+  
+  html, body {
+    position: relative;
+    overflow: auto;
+    height: 100%;
+  }
+}
+
 /* Add overscroll behavior to prevent body bounce on mobile */
 html, body {
   overscroll-behavior-y: contain;

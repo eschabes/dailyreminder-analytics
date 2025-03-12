@@ -4,6 +4,7 @@ import { WeeklyTask } from '@/types';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
 import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
+import { useState } from 'react';
 import WeeklyTaskRow from './WeeklyTaskRow';
 import WeeklyTaskTableHeader from './WeeklyTaskTableHeader';
 
@@ -28,6 +29,8 @@ const WeeklyTaskList = ({
   onUpdateTaskName,
   onDragEnd
 }: WeeklyTaskListProps) => {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  
   if (weeklyTasks.length === 0) {
     return (
       <div className="py-8 flex flex-col items-center justify-center text-center">
@@ -52,7 +55,12 @@ const WeeklyTaskList = ({
           <Droppable droppableId="tasks">
             {(provided) => (
               <table className="w-full" {...provided.droppableProps} ref={provided.innerRef}>
-                <WeeklyTaskTableHeader weekDates={weekDates} isMobile={isMobile} />
+                <WeeklyTaskTableHeader 
+                  weekDates={weekDates} 
+                  isMobile={isMobile} 
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                />
                 <tbody className="divide-y divide-border/30">
                   {weeklyTasks.map((task, index) => (
                     <WeeklyTaskRow
@@ -64,6 +72,7 @@ const WeeklyTaskList = ({
                       onDeleteTask={onDeleteTask}
                       onUpdateInterval={onUpdateInterval}
                       onUpdateTaskName={onUpdateTaskName}
+                      selectedDate={selectedDate}
                     />
                   ))}
                   {provided.placeholder}

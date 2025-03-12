@@ -53,6 +53,8 @@
     --soft-gray: #F1F0FB;
     --soft-blue: #D3E4FD;
     --today-highlight: #E5DEFF;
+    --selected-day: #FDEBD0;
+    --current-selected-day: #D4C5FF;
   }
 
   .dark {
@@ -186,4 +188,89 @@
 
 .bg-today-highlight {
   background-color: var(--today-highlight);
+}
+
+.bg-selected-day {
+  background-color: var(--selected-day);
+}
+
+.bg-current-selected-day {
+  background-color: var(--current-selected-day);
+}
+
+/* Mobile optimizations */
+@media (max-width: 767px) {
+  .mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+  
+  .mobile-smaller-text {
+    font-size: 0.875rem !important;
+  }
+  
+  .mobile-compact-padding {
+    padding: 0.75rem !important;
+  }
+  
+  .mobile-hidden {
+    display: none !important;
+  }
+  
+  .mobile-flex-column {
+    flex-direction: column !important;
+  }
+  
+  .mobile-touch-friendly {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Landscape mode optimizations */
+@media (max-height: 500px) and (orientation: landscape) {
+  #root {
+    position: relative;
+    overflow-y: auto;
+    height: 100%;
+    padding: 0.5rem;
+  }
+  
+  html, body {
+    position: relative;
+    overflow: auto;
+    height: 100%;
+  }
+}
+
+/* Add overscroll behavior to prevent body bounce on mobile */
+html, body {
+  overscroll-behavior-y: contain;
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Increase tap target sizes for mobile */
+button, 
+input, 
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+/* Adjust input styles for touch */
+input, 
+textarea, 
+select {
+  font-size: 16px; /* Prevents iOS zoom on focus */
 }
