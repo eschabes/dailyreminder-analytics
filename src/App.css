@@ -89,32 +89,37 @@
 /* Landscape mode optimizations */
 @media (max-height: 500px) and (orientation: landscape) {
   #root {
-    position: relative;
-    overflow-y: auto;
-    height: 100%;
     padding: 0.5rem;
+    height: 100%;
+    overflow-y: auto;
   }
   
-  html, body {
-    position: relative;
+  body, html {
     overflow: auto;
+    position: static;
     height: 100%;
   }
 }
 
-/* Add overscroll behavior to prevent body bounce on mobile */
+/* Fix for body scrolling on all devices */
 html, body {
   overscroll-behavior-y: contain;
-  height: 100%;
-  width: 100%;
-  position: fixed;
-  overflow: hidden;
 }
 
-#root {
-  height: 100%;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+/* Default for portrait mode */
+@media (orientation: portrait) {
+  html, body {
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    overflow: hidden;
+  }
+  
+  #root {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Increase tap target sizes for mobile */
@@ -130,4 +135,16 @@ input,
 textarea, 
 select {
   font-size: 16px; /* Prevents iOS zoom on focus */
+}
+
+/* Table scrolling fixes */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.task-table {
+  min-width: 100%;
+  width: max-content;
 }

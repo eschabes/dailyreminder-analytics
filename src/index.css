@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -198,6 +199,19 @@
   background-color: var(--current-selected-day);
 }
 
+/* Table container utilities */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  padding-bottom: 1rem;
+}
+
+.task-table {
+  min-width: 100%;
+  width: max-content;
+}
+
 /* Mobile optimizations */
 @media (max-width: 767px) {
   .mobile-full-width {
@@ -232,32 +246,37 @@
 /* Landscape mode optimizations */
 @media (max-height: 500px) and (orientation: landscape) {
   #root {
-    position: relative;
-    overflow-y: auto;
-    height: 100%;
     padding: 0.5rem;
+    height: 100%;
+    overflow-y: auto;
   }
   
-  html, body {
-    position: relative;
+  body, html {
     overflow: auto;
+    position: static;
     height: 100%;
   }
 }
 
-/* Add overscroll behavior to prevent body bounce on mobile */
+/* Fix for body scrolling on all devices */
 html, body {
   overscroll-behavior-y: contain;
-  height: 100%;
-  width: 100%;
-  position: fixed;
-  overflow: hidden;
 }
 
-#root {
-  height: 100%;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+/* Default for portrait mode */
+@media (orientation: portrait) {
+  html, body {
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    overflow: hidden;
+  }
+  
+  #root {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Increase tap target sizes for mobile */

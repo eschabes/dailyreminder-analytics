@@ -167,7 +167,7 @@ const WeeklyTaskView = ({ currentDate, onAnalyticsUpdate }: WeeklyTaskViewProps)
     <Card className="neomorphism border-none mb-6">
       <CardHeader className={cn(
         "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3",
-        "px-4 py-3 sm:px-6 sm:py-4"
+        "px-2 sm:px-6 py-3 sm:py-4"
       )}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
           <h2 className="text-lg font-semibold tracking-tight">Weekly Tasks</h2>
@@ -183,12 +183,12 @@ const WeeklyTaskView = ({ currentDate, onAnalyticsUpdate }: WeeklyTaskViewProps)
       
       <CardHeader className={cn(
         "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-0",
-        "px-4 pb-2 sm:px-6"
+        "px-2 sm:px-6 pb-2"
       )}>
         <WeeklyTaskInput onAddTask={handleAddTask} />
       </CardHeader>
       
-      <CardContent className="px-2 sm:px-6 py-2 sm:py-4">
+      <CardContent className="px-2 sm:px-6 py-2 sm:py-4 overflow-hidden">
         <WeeklyTaskList
           weeklyTasks={weeklyTasks}
           weekDates={weekDates}

@@ -46,15 +46,16 @@ const WeeklyTaskList = ({
   }
 
   return (
-    <ScrollArea className={cn(
-      "rounded-md",
-      isMobile ? "max-h-[calc(100vh-14rem)]" : "max-h-[calc(100vh-18rem)]"
-    )}>
-      <div className="w-full overflow-x-auto pb-2">
+    <div className="overflow-hidden rounded-md">
+      <div className="table-container pb-2">
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="tasks">
             {(provided) => (
-              <table className="w-full" {...provided.droppableProps} ref={provided.innerRef}>
+              <table 
+                className="task-table" 
+                {...provided.droppableProps} 
+                ref={provided.innerRef}
+              >
                 <WeeklyTaskTableHeader 
                   weekDates={weekDates} 
                   isMobile={isMobile} 
@@ -82,7 +83,7 @@ const WeeklyTaskList = ({
           </Droppable>
         </DragDropContext>
       </div>
-    </ScrollArea>
+    </div>
   );
 };
 

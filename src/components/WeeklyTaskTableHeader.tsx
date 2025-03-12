@@ -18,14 +18,14 @@ const WeeklyTaskTableHeader = ({
   onSelectDate 
 }: WeeklyTaskTableHeaderProps) => {
   return (
-    <thead>
+    <thead className="sticky top-0 bg-background z-10">
       <tr>
-        <th className="w-8"></th>
-        <th className="text-left py-2 px-2 sm:px-3 font-medium text-muted-foreground text-sm w-24 sm:w-52">Task</th>
-        <th className="text-center py-2 px-1 sm:px-2 font-medium text-muted-foreground text-xs sm:text-sm w-16 sm:w-20">
+        <th className="w-6 sm:w-8"></th>
+        <th className="text-left py-2 px-1 sm:px-3 font-medium text-muted-foreground text-xs sm:text-sm w-16 sm:w-52">Task</th>
+        <th className="text-center py-2 px-1 font-medium text-muted-foreground text-xs w-12 sm:w-20">
           <div className="flex items-center justify-center gap-1">
             <Clock className="h-3 w-3" />
-            <span>Days</span>
+            <span className="hidden sm:inline">Days</span>
           </div>
         </th>
         {weekDates.map((date) => {
@@ -37,7 +37,7 @@ const WeeklyTaskTableHeader = ({
             <th 
               key={date.toISOString()} 
               className={cn(
-                "text-center py-2 px-1 sm:px-2 font-medium text-xs sm:text-sm cursor-pointer",
+                "text-center py-1 sm:py-2 px-1 sm:px-2 font-medium text-xs cursor-pointer whitespace-nowrap min-w-10",
                 isCurrentDay ? "bg-today-highlight" : "",
                 isSelected && !isCurrentDay ? "bg-selected-day" : "",
                 isSelected && isCurrentDay ? "bg-current-selected-day" : ""
@@ -51,7 +51,7 @@ const WeeklyTaskTableHeader = ({
             </th>
           );
         })}
-        <th className="w-8 sm:w-10"></th>
+        <th className="w-6 sm:w-10"></th>
       </tr>
     </thead>
   );
