@@ -20,9 +20,9 @@ const WeeklyTaskTableHeader = ({
   return (
     <thead className="sticky top-0 bg-background z-10">
       <tr>
-        <th className="w-6 sm:w-8"></th>
-        <th className="text-left py-2 px-1 sm:px-3 font-medium text-muted-foreground text-xs sm:text-sm w-16 sm:w-52">Task</th>
-        <th className="text-center py-2 px-1 font-medium text-muted-foreground text-xs w-12 sm:w-20">
+        <th className="w-6 sm:w-8 sticky left-0 z-20 bg-background"></th>
+        <th className="text-left py-2 px-1 sm:px-3 font-medium text-muted-foreground text-xs sm:text-sm w-16 sm:w-52 sticky left-6 sm:left-8 z-20 bg-background">Task</th>
+        <th className="text-center py-2 px-1 font-medium text-muted-foreground text-xs w-12 sm:w-20 sticky left-[calc(16px+4rem)] sm:left-60 z-20 bg-background">
           <div className="flex items-center justify-center gap-1">
             <Clock className="h-3 w-3" />
             <span className="hidden sm:inline">Days</span>

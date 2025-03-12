@@ -86,6 +86,24 @@
   }
 }
 
+/* Table scrolling improvements */
+.task-table-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  position: relative;
+  padding-bottom: 1rem;
+  max-height: calc(100vh - 250px);
+}
+
+.task-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: max-content;
+  min-width: 100%;
+}
+
 /* Landscape mode optimizations */
 @media (max-height: 500px) and (orientation: landscape) {
   #root {
@@ -98,6 +116,10 @@
     overflow: auto;
     position: static;
     height: 100%;
+  }
+  
+  .task-table-container {
+    max-height: calc(100vh - 120px);
   }
 }
 
@@ -135,16 +157,4 @@ input,
 textarea, 
 select {
   font-size: 16px; /* Prevents iOS zoom on focus */
-}
-
-/* Table scrolling fixes */
-.table-container {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  max-width: 100%;
-}
-
-.task-table {
-  min-width: 100%;
-  width: max-content;
 }
