@@ -37,7 +37,7 @@ const WeeklyTaskTableHeader = ({
             <th 
               key={date.toISOString()} 
               className={cn(
-                "text-center py-1 sm:py-2 px-1 sm:px-2 font-medium text-xs cursor-pointer whitespace-nowrap min-w-10",
+                "text-center py-1 sm:py-2 px-1 sm:px-2 font-medium text-xs cursor-pointer whitespace-nowrap min-w-12 w-12",
                 isCurrentDay ? "bg-today-highlight" : "",
                 isSelected && !isCurrentDay ? "bg-selected-day" : "",
                 isSelected && isCurrentDay ? "bg-current-selected-day" : ""

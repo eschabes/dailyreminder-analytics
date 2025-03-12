@@ -1,5 +1,4 @@
 
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { WeeklyTask } from '@/types';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
 import { cn } from '@/lib/utils';
@@ -46,7 +45,7 @@ const WeeklyTaskList = ({
   }
 
   return (
-    <div className="overflow-hidden rounded-md relative">
+    <div className="overflow-hidden rounded-md border border-border/40">
       <div className="task-table-container">
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="tasks">

@@ -102,6 +102,7 @@
   border-spacing: 0;
   width: max-content;
   min-width: 100%;
+  table-layout: fixed;
 }
 
 /* Fixed columns */
