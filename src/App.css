@@ -104,6 +104,35 @@
   min-width: 100%;
 }
 
+/* Fixed columns */
+.fixed-column {
+  position: sticky;
+  background-color: var(--background);
+  z-index: 20;
+}
+
+.handle-column {
+  left: 0;
+}
+
+.task-column {
+  left: 2.5rem;
+}
+
+.days-column {
+  left: 9rem;
+}
+
+@media (max-width: 640px) {
+  .task-column {
+    left: 2rem;
+  }
+  
+  .days-column {
+    left: 6.5rem;
+  }
+}
+
 /* Landscape mode optimizations */
 @media (max-height: 500px) and (orientation: landscape) {
   #root {
@@ -120,6 +149,12 @@
   
   .task-table-container {
     max-height: calc(100vh - 120px);
+  }
+  
+  /* Ensure that fixed columns work properly in landscape */
+  .fixed-column {
+    position: sticky;
+    background-color: var(--background);
   }
 }
 

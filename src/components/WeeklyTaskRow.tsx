@@ -75,7 +75,7 @@ const WeeklyTaskRow = ({
           {...provided.draggableProps}
           className="border-t border-border/40"
         >
-          <td className="w-8 py-2 px-1 sticky left-0 z-20 bg-background">
+          <td className="w-8 py-2 px-1 fixed-column handle-column">
             <div
               {...provided.dragHandleProps}
               className="flex items-center justify-center h-full cursor-grab active:cursor-grabbing"
@@ -85,7 +85,7 @@ const WeeklyTaskRow = ({
           </td>
           <td 
             className={cn(
-              "py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base relative sticky left-6 sm:left-8 z-20",
+              "py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base relative fixed-column task-column",
               statusColor
             )}
           >
@@ -159,7 +159,7 @@ const WeeklyTaskRow = ({
               </div>
             )}
           </td>
-          <td className="py-2 px-1 text-center text-xs sticky left-[calc(16px+4rem)] sm:left-60 z-20 bg-background">
+          <td className="py-2 px-1 text-center text-xs fixed-column days-column">
             {daysSince !== null ? (
               <TooltipProvider>
                 <Tooltip>
