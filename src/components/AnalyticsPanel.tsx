@@ -93,7 +93,7 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
     processedTasks.sort((a, b) => {
       if (a.daysSinceLastCompletion === '-') return 1;
       if (b.daysSinceLastCompletion === '-') return -1;
-      return a.daysSinceLastCompletion - b.daysSinceLastCompletion;
+      return Number(a.daysSinceLastCompletion) - Number(b.daysSinceLastCompletion);
     });
     
     setTasks(processedTasks);
@@ -517,3 +517,4 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
 };
 
 export default AnalyticsPanel;
+
