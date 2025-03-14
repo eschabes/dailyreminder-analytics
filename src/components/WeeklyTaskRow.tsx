@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { WeeklyTask } from '@/types';
 import { Draggable } from 'react-beautiful-dnd';
@@ -67,6 +67,23 @@ const WeeklyTaskRow = ({
     setIsEditing(false);
   };
 
+  // Handle clicking outside the editor
+  useEffect(() => {
+    if (!isEditing) return;
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const dropdown = document.querySelector(`[data-task-id="${task.id}"] .task-edit-dropdown`);
+      
+      if (dropdown && !dropdown.contains(target) && !target.closest(`[data-task-id="${task.id}"] .task-name`)) {
+        handleCancel();
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isEditing, task.id]);
+
   return (
     <Draggable draggableId={task.id} index={index}>
       {(provided) => (
@@ -74,6 +91,7 @@ const WeeklyTaskRow = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           className="border-t border-border/40"
+          data-task-id={task.id}
         >
           <td className="py-2 px-1 handle-column fixed-column">
             <div
@@ -90,7 +108,7 @@ const WeeklyTaskRow = ({
             )}
           >
             <div 
-              className="max-w-[100px] sm:max-w-full overflow-hidden text-ellipsis cursor-pointer flex items-center"
+              className="max-w-[100px] sm:max-w-full overflow-hidden text-ellipsis cursor-pointer flex items-center task-name"
               onClick={() => setIsEditing(true)}
             >
               {task.name}
