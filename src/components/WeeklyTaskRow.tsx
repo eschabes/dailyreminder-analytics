@@ -75,7 +75,7 @@ const WeeklyTaskRow = ({
           {...provided.draggableProps}
           className="border-t border-border/40"
         >
-          <td className="w-8 py-2 px-1 fixed-column handle-column">
+          <td className="py-2 px-1 handle-column fixed-column">
             <div
               {...provided.dragHandleProps}
               className="flex items-center justify-center h-full cursor-grab active:cursor-grabbing"
@@ -85,7 +85,7 @@ const WeeklyTaskRow = ({
           </td>
           <td 
             className={cn(
-              "py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base relative fixed-column task-column",
+              "py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base relative task-column fixed-column",
               statusColor
             )}
           >
@@ -107,7 +107,7 @@ const WeeklyTaskRow = ({
             </div>
             
             {isEditing && (
-              <div className="absolute z-30 top-full left-0 mt-1 bg-popover border border-border rounded-md shadow-md p-3 w-64">
+              <div className="task-edit-dropdown absolute z-50 top-full left-0 mt-1 p-3 w-64">
                 <div className="space-y-3">
                   <div>
                     <label className="text-xs font-medium mb-1 block">Task Name</label>
@@ -159,7 +159,7 @@ const WeeklyTaskRow = ({
               </div>
             )}
           </td>
-          <td className="py-2 px-1 text-center text-xs fixed-column days-column">
+          <td className="py-2 px-1 text-center text-xs days-column fixed-column">
             {daysSince !== null ? (
               <TooltipProvider>
                 <Tooltip>
@@ -187,7 +187,7 @@ const WeeklyTaskRow = ({
               <td 
                 key={dateStr} 
                 className={cn(
-                  "py-2 sm:py-3 px-1 sm:px-2 text-center",
+                  "py-2 sm:py-3 px-1 sm:px-2 text-center day-column",
                   isCurrentDay ? "bg-today-highlight" : "",
                   isSelectedDay && !isCurrentDay ? "bg-selected-day" : "",
                   isSelectedDay && isCurrentDay ? "bg-current-selected-day" : ""
