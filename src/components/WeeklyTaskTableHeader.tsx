@@ -20,7 +20,7 @@ const WeeklyTaskTableHeader = ({
   return (
     <thead className="sticky top-0 bg-background z-10">
       <tr>
-        <th className="w-6 sm:w-8 fixed-column handle-column"></th>
+        <th className="w-8 fixed-column handle-column"></th>
         <th className="text-left py-2 px-1 sm:px-3 font-medium text-muted-foreground text-xs sm:text-sm w-16 sm:w-52 fixed-column task-column">Task</th>
         <th className="text-center py-2 px-1 font-medium text-muted-foreground text-xs w-12 sm:w-20 fixed-column days-column">
           <div className="flex items-center justify-center gap-1">
@@ -37,7 +37,7 @@ const WeeklyTaskTableHeader = ({
             <th 
               key={date.toISOString()} 
               className={cn(
-                "text-center py-1 sm:py-2 px-1 sm:px-2 font-medium text-xs cursor-pointer whitespace-nowrap min-w-12 w-12",
+                "text-center py-1 sm:py-2 px-1 sm:px-2 font-medium text-xs cursor-pointer whitespace-nowrap w-16 min-w-[4rem]",
                 isCurrentDay ? "bg-today-highlight" : "",
                 isSelected && !isCurrentDay ? "bg-selected-day" : "",
                 isSelected && isCurrentDay ? "bg-current-selected-day" : ""
@@ -51,7 +51,7 @@ const WeeklyTaskTableHeader = ({
             </th>
           );
         })}
-        <th className="w-6 sm:w-10"></th>
+        <th className="w-10 sm:w-14"></th>
       </tr>
     </thead>
   );

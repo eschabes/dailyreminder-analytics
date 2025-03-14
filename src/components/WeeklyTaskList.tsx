@@ -45,13 +45,13 @@ const WeeklyTaskList = ({
   }
 
   return (
-    <div className="overflow-hidden rounded-md border border-border/40">
-      <div className="task-table-container">
+    <div className="overflow-hidden rounded-md border border-border/40 relative">
+      <div className="task-table-container" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="tasks">
             {(provided) => (
               <table 
-                className="task-table w-full" 
+                className="task-table" 
                 {...provided.droppableProps} 
                 ref={provided.innerRef}
               >
