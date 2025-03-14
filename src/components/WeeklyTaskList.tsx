@@ -45,13 +45,13 @@ const WeeklyTaskList = ({
   }
 
   return (
-    <div className="overflow-hidden rounded-md border border-border/40">
+    <div className="rounded-md border border-border/40">
       <div className="task-table-container">
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="tasks">
             {(provided) => (
               <table 
-                className="task-table" 
+                className="task-table"
                 {...provided.droppableProps} 
                 ref={provided.innerRef}
               >

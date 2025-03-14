@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { WeeklyTask } from '@/types';
 import { Draggable } from 'react-beautiful-dnd';
@@ -40,6 +40,8 @@ const WeeklyTaskRow = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(task.name);
   const [editedInterval, setEditedInterval] = useState(task.interval?.toString() || '');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const taskNameRef = useRef<HTMLDivElement>(null);
   
   // Use the selected date if available, otherwise use the normal calculation
   const daysSince = selectedDate 
@@ -73,16 +75,21 @@ const WeeklyTaskRow = ({
     
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      const dropdown = document.querySelector(`[data-task-id="${task.id}"] .task-edit-dropdown`);
       
-      if (dropdown && !dropdown.contains(target) && !target.closest(`[data-task-id="${task.id}"] .task-name`)) {
+      // Check if the click is outside both the dropdown and the task name
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(target) && 
+        taskNameRef.current && 
+        !taskNameRef.current.contains(target)
+      ) {
         handleCancel();
       }
     };
     
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isEditing, task.id]);
+  }, [isEditing]);
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -103,12 +110,13 @@ const WeeklyTaskRow = ({
           </td>
           <td 
             className={cn(
-              "py-2 sm:py-3 px-2 sm:px-3 font-medium text-sm sm:text-base relative task-column fixed-column",
+              "py-2 px-2 font-medium text-sm relative task-column fixed-column",
               statusColor
             )}
           >
             <div 
-              className="max-w-[100px] sm:max-w-full overflow-hidden text-ellipsis cursor-pointer flex items-center task-name"
+              ref={taskNameRef}
+              className="max-w-[90px] sm:max-w-full overflow-hidden text-ellipsis cursor-pointer flex items-center task-name"
               onClick={() => setIsEditing(true)}
             >
               {task.name}
@@ -125,14 +133,18 @@ const WeeklyTaskRow = ({
             </div>
             
             {isEditing && (
-              <div className="task-edit-dropdown absolute z-50 top-full left-0 mt-1 p-3 w-64">
-                <div className="space-y-3">
+              <div 
+                ref={dropdownRef}
+                className="task-edit-dropdown"
+              >
+                <div className="space-y-3 p-3">
                   <div>
                     <label className="text-xs font-medium mb-1 block">Task Name</label>
                     <Input
                       value={editedName}
                       onChange={(e) => setEditedName(e.target.value)}
                       className="h-8 text-sm"
+                      autoFocus
                     />
                   </div>
                   <div>
@@ -205,7 +217,7 @@ const WeeklyTaskRow = ({
               <td 
                 key={dateStr} 
                 className={cn(
-                  "py-2 sm:py-3 px-1 sm:px-2 text-center day-column",
+                  "py-2 px-0 text-center day-column",
                   isCurrentDay ? "bg-today-highlight" : "",
                   isSelectedDay && !isCurrentDay ? "bg-selected-day" : "",
                   isSelectedDay && isCurrentDay ? "bg-current-selected-day" : ""
@@ -216,22 +228,22 @@ const WeeklyTaskRow = ({
                   className="mx-auto block transition-all duration-200 hover:scale-110 mobile-touch-friendly"
                 >
                   {isCompleted ? (
-                    <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-primary fill-primary" />
+                    <CheckCircle className="h-5 w-5 text-primary fill-primary" />
                   ) : (
-                    <Circle className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+                    <Circle className="h-5 w-5 text-muted-foreground" />
                   )}
                 </button>
               </td>
             );
           })}
-          <td className="py-2 sm:py-3 px-1 sm:px-2">
+          <td className="py-2 px-0">
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 sm:h-8 sm:w-8 rounded-full opacity-70 hover:opacity-100"
+              className="h-7 w-7 rounded-full opacity-70 hover:opacity-100"
               onClick={() => onDeleteTask(task.id)}
             >
-              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground hover:text-destructive transition-colors" />
+              <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive transition-colors" />
             </Button>
           </td>
         </tr>
