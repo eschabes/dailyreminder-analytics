@@ -51,7 +51,7 @@ const WeeklyTaskList = ({
           <Droppable droppableId="tasks">
             {(provided) => (
               <table 
-                className="task-table" 
+                className="task-table w-full" 
                 {...provided.droppableProps} 
                 ref={provided.innerRef}
               >

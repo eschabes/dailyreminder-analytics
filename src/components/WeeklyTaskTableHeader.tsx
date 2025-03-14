@@ -51,7 +51,7 @@ const WeeklyTaskTableHeader = ({
             </th>
           );
         })}
-        <th className="w-10 sm:w-14"></th>
+        <th className="w-8 sm:w-10"></th>
       </tr>
     </thead>
   );
