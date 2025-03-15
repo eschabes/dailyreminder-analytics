@@ -20,12 +20,11 @@ const WeeklyTaskTableHeader = ({
   return (
     <thead className="sticky top-0 bg-background z-10">
       <tr>
-        <th className="handle-column fixed-column w-8"></th>
-        <th className="text-left py-2 px-1 sm:px-2 font-medium text-muted-foreground text-xs sm:text-sm task-column fixed-column">Task</th>
-        <th className="text-center py-2 px-1 font-medium text-muted-foreground text-xs days-column fixed-column">
-          <div className="flex items-center justify-center gap-1">
+        <th className="handle-column fixed-column w-6"></th>
+        <th className="text-left py-1 px-1 font-medium text-muted-foreground text-xs task-column fixed-column">Task</th>
+        <th className="text-center py-1 px-0 font-medium text-muted-foreground text-xs days-column fixed-column">
+          <div className="flex items-center justify-center">
             <Clock className="h-3 w-3" />
-            <span className="hidden sm:inline">Days</span>
           </div>
         </th>
         {weekDates.map((date) => {
@@ -37,7 +36,7 @@ const WeeklyTaskTableHeader = ({
             <th 
               key={date.toISOString()} 
               className={cn(
-                "text-center py-1 sm:py-2 px-0 font-medium text-xs cursor-pointer whitespace-nowrap day-column",
+                "text-center py-1 px-0 font-medium text-xs cursor-pointer whitespace-nowrap day-column",
                 isCurrentDay ? "bg-today-highlight" : "",
                 isSelected && !isCurrentDay ? "bg-selected-day" : "",
                 isSelected && isCurrentDay ? "bg-current-selected-day" : ""
@@ -45,13 +44,13 @@ const WeeklyTaskTableHeader = ({
               onClick={() => onSelectDate(dateStr === selectedDate ? null : dateStr)}
             >
               <div className="flex flex-col items-center">
-                <span>{format(date, 'E')}</span>
-                <span className="text-xs">{format(date, 'd')}</span>
+                <span className="text-[10px]">{format(date, 'E')}</span>
+                <span className="text-[10px]">{format(date, 'd')}</span>
               </div>
             </th>
           );
         })}
-        <th className="w-6 sm:w-8"></th>
+        <th className="w-5"></th>
       </tr>
     </thead>
   );

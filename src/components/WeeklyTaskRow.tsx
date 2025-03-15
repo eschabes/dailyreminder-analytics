@@ -100,36 +100,27 @@ const WeeklyTaskRow = ({
           className="border-t border-border/40"
           data-task-id={task.id}
         >
-          <td className="py-2 px-1 handle-column fixed-column">
+          <td className="py-1 px-0 handle-column fixed-column">
             <div
               {...provided.dragHandleProps}
               className="flex items-center justify-center h-full cursor-grab active:cursor-grabbing"
             >
-              <GripVertical className="h-4 w-4 text-muted-foreground" />
+              <GripVertical className="h-3 w-3 text-muted-foreground" />
             </div>
           </td>
           <td 
             className={cn(
-              "py-2 px-2 font-medium text-sm relative task-column fixed-column",
+              "py-1 px-1 font-medium text-xs relative task-column fixed-column",
               statusColor
             )}
           >
             <div 
               ref={taskNameRef}
-              className="max-w-[90px] sm:max-w-full overflow-hidden text-ellipsis cursor-pointer flex items-center task-name"
+              className="truncate cursor-pointer flex items-center task-name"
               onClick={() => setIsEditing(true)}
             >
               {task.name}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Pencil className="h-3 w-3 ml-1 text-muted-foreground opacity-50" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Edit task</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Pencil className="h-2 w-2 ml-1 text-muted-foreground opacity-50" />
             </div>
             
             {isEditing && (
@@ -189,23 +180,10 @@ const WeeklyTaskRow = ({
               </div>
             )}
           </td>
-          <td className="py-2 px-1 text-center text-xs days-column fixed-column">
-            {daysSince !== null ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="outline" className="text-xs">
-                      {daysSince}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Days since last completion</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              <span className="text-muted-foreground text-xs">-</span>
-            )}
+          <td className="py-1 px-0 text-center text-xs days-column fixed-column">
+            <Badge variant="outline" className="text-[10px] px-1 py-0">
+              {daysSince !== null ? daysSince : '-'}
+            </Badge>
           </td>
           {weekDates.map((date) => {
             const dateStr = format(date, 'yyyy-MM-dd');
@@ -217,7 +195,7 @@ const WeeklyTaskRow = ({
               <td 
                 key={dateStr} 
                 className={cn(
-                  "py-2 px-0 text-center day-column",
+                  "py-1 px-0 text-center day-column",
                   isCurrentDay ? "bg-today-highlight" : "",
                   isSelectedDay && !isCurrentDay ? "bg-selected-day" : "",
                   isSelectedDay && isCurrentDay ? "bg-current-selected-day" : ""
@@ -225,22 +203,22 @@ const WeeklyTaskRow = ({
               >
                 <button
                   onClick={() => onToggleDay(task.id, dateStr)}
-                  className="mx-auto block transition-all duration-200 hover:scale-110 mobile-touch-friendly"
+                  className="mx-auto block transition-all"
                 >
                   {isCompleted ? (
-                    <CheckCircle className="h-5 w-5 text-primary fill-primary" />
+                    <CheckCircle className="h-4 w-4 text-primary fill-primary" />
                   ) : (
-                    <Circle className="h-5 w-5 text-muted-foreground" />
+                    <Circle className="h-4 w-4 text-muted-foreground" />
                   )}
                 </button>
               </td>
             );
           })}
-          <td className="py-2 px-0">
+          <td className="py-1 px-0">
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 rounded-full opacity-70 hover:opacity-100"
+              className="h-5 w-5 rounded-full opacity-70 hover:opacity-100"
               onClick={() => onDeleteTask(task.id)}
             >
               <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive transition-colors" />

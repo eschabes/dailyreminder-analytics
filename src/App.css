@@ -1,7 +1,8 @@
+
 #root {
   width: 100%;
   margin: 0 auto;
-  padding: 0.5rem;
+  padding: 0.25rem;
   text-align: center;
 }
 
@@ -60,7 +61,7 @@
   position: relative;
   max-height: calc(100vh - 250px);
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: hidden; /* Hide horizontal scrollbar */
 }
 
 .task-table {
@@ -80,27 +81,27 @@
 
 .handle-column {
   left: 0;
-  width: 24px;
-  min-width: 24px;
+  width: 20px;
+  min-width: 20px;
 }
 
 .task-column {
-  left: 24px;
-  width: 90px;
-  min-width: 90px;
+  left: 20px;
+  width: 60px;
+  min-width: 60px;
 }
 
 .days-column {
-  left: 114px;
-  width: 30px;
-  min-width: 30px;
+  left: 80px;
+  width: 20px;
+  min-width: 20px;
 }
 
 /* Day columns - ensure consistent width */
 .day-column {
-  width: 36px;
-  min-width: 36px;
-  max-width: 36px;
+  width: 30px;
+  min-width: 30px;
+  max-width: 30px;
 }
 
 @media (min-width: 640px) {
