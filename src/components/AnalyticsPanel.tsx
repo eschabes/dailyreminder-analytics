@@ -157,15 +157,9 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
       
     setCompletionTrend(trendData);
     
-    // Get weekly completion data
-    const weeklyCmpl = getWeeklyCompletions(weeklyTasks, 10);
-    
-    // Filter out weeks with no data and keep only the last 6 weeks
-    const filteredWeeklyCmpl = weeklyCmpl
-      .filter(week => week.completions > 0 || week.rate > 0)
-      .slice(-6);
-      
-    setWeeklyCompletions(filteredWeeklyCmpl);
+    // Get weekly completion data with improved metrics
+    const weeklyCmpl = getWeeklyCompletions(weeklyTasks, 6);
+    setWeeklyCompletions(weeklyCmpl);
   };
 
   if (!mounted) {
@@ -424,7 +418,7 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium flex items-center">
                 <TrendingUp className="h-4 w-4 mr-2 text-primary" />
-                Weekly Completion Rate
+                Weekly Completion Rates
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -432,16 +426,12 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
                 {weeklyCompletions.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart 
-                      data={weeklyCompletions.map(week => ({
-                        name: format(parseISO(week.date), 'MMM d'),
-                        rate: week.rate,
-                        completions: week.completions
-                      }))} 
+                      data={weeklyCompletions} 
                       margin={{ top: 20, right: 20, bottom: 20, left: 10 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                       <XAxis 
-                        dataKey="name" 
+                        dataKey="label" 
                         axisLine={false}
                         tickLine={false}
                         tick={{ fontSize: 12 }}
@@ -454,10 +444,12 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
                         domain={[0, 100]}
                       />
                       <Tooltip
-                        formatter={(value, name) => {
-                          if (name === 'rate') return [`${value}%`, 'Completion Rate'];
-                          return [`${value}`, 'Total Completions'];
+                        formatter={(value, name, props) => {
+                          if (name === 'avgRate') return [`${value}%`, 'Average Rate'];
+                          if (name === 'completions') return [`${value}`, 'Total Completions'];
+                          return [value, name];
                         }}
+                        labelFormatter={(label) => `Week of ${label}`}
                         contentStyle={{ 
                           background: 'rgba(255, 255, 255, 0.95)', 
                           border: '1px solid rgba(0, 0, 0, 0.05)',
@@ -467,11 +459,11 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
                       />
                       <Legend />
                       <Bar 
-                        dataKey="rate" 
+                        dataKey="avgRate" 
                         fill="hsl(var(--primary))" 
                         radius={[4, 4, 0, 0]}
                         animationDuration={1000}
-                        name="Completion Rate"
+                        name="Weekly Average Rate"
                       />
                       <Bar 
                         dataKey="completions" 
@@ -490,9 +482,52 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
               </div>
               
               <div className="mt-4 pt-4 border-t border-border/40">
+                <h4 className="font-medium mb-2">Daily Completion Rates</h4>
+                {weeklyCompletions.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {weeklyCompletions.slice(-2).reverse().map((week) => (
+                      <div key={week.weekStart} className="mb-2">
+                        <div className="flex justify-between items-center mb-1">
+                          <h5 className="text-sm font-medium">Week of {week.label}</h5>
+                          <span className="text-sm text-muted-foreground">Average: {week.avgRate}%</span>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1">
+                          {week.days.map((day) => (
+                            <div 
+                              key={day.date} 
+                              className="flex flex-col items-center"
+                            >
+                              <span className="text-xs text-muted-foreground">{day.day}</span>
+                              <div 
+                                className={cn(
+                                  "w-full h-8 rounded-sm flex items-center justify-center text-xs font-medium",
+                                  {
+                                    "bg-primary/10 text-primary": day.rate > 0,
+                                    "bg-muted text-muted-foreground": day.rate === 0
+                                  }
+                                )}
+                                style={{
+                                  opacity: day.rate > 0 ? Math.max(0.3, day.rate / 100) : 0.1
+                                }}
+                              >
+                                {day.rate > 0 ? `${day.rate}%` : '-'}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No data available for daily completion rates</p>
+                )}
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-border/40">
                 <p className="text-sm text-muted-foreground">
-                  Completion rate is calculated based on the percentage of tasks completed compared to expected completions
-                  based on each task's interval setting. Higher percentages indicate better consistency in task completion.
+                  Completion rate is calculated based on the percentage of tasks completed each day,
+                  and then averaged across days with activity. This provides a better representation
+                  of your consistency in completing tasks over time.
                 </p>
               </div>
             </CardContent>

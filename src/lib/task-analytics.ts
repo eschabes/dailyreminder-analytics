@@ -1,6 +1,6 @@
 
 import { WeeklyTask } from '@/types';
-import { differenceInDays, parseISO, format, isSameDay, startOfWeek, endOfWeek, isWithinInterval, isToday, addDays } from 'date-fns';
+import { differenceInDays, parseISO, format, isSameDay, startOfWeek, endOfWeek, isWithinInterval, isToday as dateIsToday, addDays } from 'date-fns';
 
 /**
  * Calculate days since last completion of a task
@@ -55,6 +55,13 @@ export function isDateToday(dateStr: string): boolean {
 }
 
 /**
+ * Export isToday function to fix the build error
+ */
+export function isToday(dateStr: string): boolean {
+  return dateIsToday(parseISO(dateStr));
+}
+
+/**
  * Format date for Excel export
  */
 export function formatDateForExport(dateStr: string): string {
@@ -84,6 +91,7 @@ export function calculateTaskCompletionRate(task: WeeklyTask): number {
 
 /**
  * Calculate current completion rate (tasks that are on schedule)
+ * Modified to only consider tasks completed today or within their interval
  */
 export function calculateCurrentCompletionRate(tasks: WeeklyTask[]): number {
   if (tasks.length === 0) return 0;
@@ -92,17 +100,14 @@ export function calculateCurrentCompletionRate(tasks: WeeklyTask[]): number {
   const tasksWithIntervals = tasks.filter(task => !!task.interval);
   if (tasksWithIntervals.length === 0) return 0;
   
-  // Count tasks that are on schedule (not overdue)
+  // Count tasks that are completed today (blue) or within interval (green)
   let onScheduleTasks = 0;
   
   tasksWithIntervals.forEach(task => {
     const daysSince = getDaysSinceLastCompletion(task);
     
-    // If never completed or completed today, skip
-    if (daysSince === null) return;
-    
-    // Check if the task is within its interval
-    if (daysSince <= (task.interval || Infinity)) {
+    // If task is completed today or within its interval (green/blue status)
+    if (daysSince === 0 || (daysSince !== null && daysSince <= (task.interval || Infinity))) {
       onScheduleTasks++;
     }
   });
@@ -113,6 +118,7 @@ export function calculateCurrentCompletionRate(tasks: WeeklyTask[]): number {
 
 /**
  * Calculate average completion rate across all tasks
+ * Modified to consider the average of daily completion rates
  */
 export function calculateAverageCompletionRate(tasks: WeeklyTask[]): number {
   if (tasks.length === 0) return 0;
@@ -121,85 +127,133 @@ export function calculateAverageCompletionRate(tasks: WeeklyTask[]): number {
   const tasksWithIntervals = tasks.filter(task => !!task.interval);
   if (tasksWithIntervals.length === 0) return 0;
   
-  // Calculate the sum of all completion rates
-  const totalRate = tasksWithIntervals.reduce((sum, task) => {
-    return sum + calculateTaskCompletionRate(task);
-  }, 0);
+  // Get all unique dates from completions
+  const allDates = new Set<string>();
+  tasksWithIntervals.forEach(task => {
+    task.completedDays.forEach(day => {
+      allDates.add(day.split('T')[0]); // Store just the date part
+    });
+  });
   
-  // Return the average
-  return Math.round(totalRate / tasksWithIntervals.length);
+  const dateArray = Array.from(allDates).sort();
+  
+  // If no completion dates, return 0
+  if (dateArray.length === 0) return 0;
+  
+  // Calculate completion rate for each day
+  let totalDailyRates = 0;
+  
+  dateArray.forEach(date => {
+    let tasksCompletedOnDay = 0;
+    
+    tasksWithIntervals.forEach(task => {
+      const wasCompletedOnDay = task.completedDays.some(day => day.startsWith(date));
+      if (wasCompletedOnDay) {
+        tasksCompletedOnDay++;
+      }
+    });
+    
+    const dailyRate = (tasksCompletedOnDay / tasksWithIntervals.length) * 100;
+    totalDailyRates += dailyRate;
+  });
+  
+  // Return the average of all daily rates
+  return Math.round(totalDailyRates / dateArray.length);
 }
 
 /**
  * Get completions grouped by week
+ * Modified to show daily completion rates within each week
  */
-export function getWeeklyCompletions(tasks: WeeklyTask[], weeksToInclude: number = 10): any[] {
-  const weeklyData: Record<string, { date: string, completions: number, rate: number }> = {};
+export function getWeeklyCompletions(tasks: WeeklyTask[], weeksToInclude: number = 6): any[] {
+  if (tasks.length === 0) return [];
+  
+  const tasksWithIntervals = tasks.filter(task => !!task.interval);
+  if (tasksWithIntervals.length === 0) return [];
+  
   const today = new Date();
+  const weeklyData = [];
   
-  // Initialize the past weeks data structure
-  for (let i = 0; i < weeksToInclude; i++) {
+  // Process the last N weeks
+  for (let weekOffset = 0; weekOffset < weeksToInclude; weekOffset++) {
     const weekDate = new Date(today);
-    weekDate.setDate(today.getDate() - (i * 7));
-    const weekStart = startOfWeek(weekDate, { weekStartsOn: 0 });
-    const weekKey = format(weekStart, 'yyyy-MM-dd');
+    weekDate.setDate(today.getDate() - (weekOffset * 7));
     
-    weeklyData[weekKey] = {
-      date: weekKey,
-      completions: 0,
-      rate: 0
-    };
-  }
-  
-  // Count completions by week
-  tasks.forEach(task => {
-    task.completedDays.forEach(day => {
-      const date = parseISO(day);
-      const weekStart = startOfWeek(date, { weekStartsOn: 0 });
-      const weekKey = format(weekStart, 'yyyy-MM-dd');
-      
-      if (weeklyData[weekKey]) {
-        weeklyData[weekKey].completions += 1;
-      }
-    });
-  });
-  
-  // Calculate completion rates for each week
-  Object.keys(weeklyData).forEach(weekKey => {
-    const weekStart = parseISO(weekKey);
+    const weekStart = startOfWeek(weekDate, { weekStartsOn: 0 });
     const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
     
-    // Calculate total tasks that should have been completed this week
-    let expectedTasks = 0;
-    let completedTasks = 0;
+    const weekKey = format(weekStart, 'yyyy-MM-dd');
     
-    tasks.forEach(task => {
-      if (task.interval) {
-        // Check if the task existed during this week
-        const taskCreated = parseISO(task.createdAt);
-        if (taskCreated <= weekEnd) {
-          expectedTasks += 1;
-          
-          // Count if task was completed during this week
-          const wasCompletedThisWeek = task.completedDays.some(day => {
-            const completionDate = parseISO(day);
-            return isWithinInterval(completionDate, { start: weekStart, end: weekEnd });
-          });
-          
-          if (wasCompletedThisWeek) {
-            completedTasks += 1;
-          }
+    // Calculate daily completion rates for this week
+    const dailyRates = [];
+    let weekTotalRate = 0;
+    let daysWithData = 0;
+    
+    for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+      const currentDay = addDays(weekStart, dayOffset);
+      const dayKey = format(currentDay, 'yyyy-MM-dd');
+      
+      // Count tasks completed on this day
+      let tasksCompletedOnDay = 0;
+      
+      tasksWithIntervals.forEach(task => {
+        const wasCompletedOnDay = task.completedDays.some(day => 
+          day.startsWith(dayKey)
+        );
+        
+        if (wasCompletedOnDay) {
+          tasksCompletedOnDay++;
         }
+      });
+      
+      // Calculate completion rate for this day
+      const dayRate = tasksWithIntervals.length > 0 
+        ? Math.round((tasksCompletedOnDay / tasksWithIntervals.length) * 100)
+        : 0;
+      
+      if (tasksCompletedOnDay > 0) {
+        weekTotalRate += dayRate;
+        daysWithData++;
       }
-    });
+      
+      dailyRates.push({
+        day: format(currentDay, 'EEE'),
+        date: dayKey,
+        rate: dayRate
+      });
+    }
     
-    // Calculate completion rate for this week
-    weeklyData[weekKey].rate = expectedTasks > 0 ? Math.round((completedTasks / expectedTasks) * 100) : 0;
-  });
+    // Calculate average rate for the week
+    const weekAvgRate = daysWithData > 0 
+      ? Math.round(weekTotalRate / daysWithData)
+      : 0;
+    
+    // Count total completions for this week
+    const weekCompletions = tasksWithIntervals.reduce((total, task) => {
+      const completionsThisWeek = task.completedDays.filter(day => {
+        const date = parseISO(day);
+        return isWithinInterval(date, { start: weekStart, end: weekEnd });
+      }).length;
+      
+      return total + completionsThisWeek;
+    }, 0);
+    
+    // Only add weeks that have some data
+    if (weekCompletions > 0 || weekAvgRate > 0) {
+      weeklyData.push({
+        weekStart: weekKey,
+        label: format(weekStart, 'MMM d'),
+        avgRate: weekAvgRate,
+        completions: weekCompletions,
+        days: dailyRates
+      });
+    }
+  }
   
-  // Convert to array and sort by date
-  return Object.values(weeklyData)
-    .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime());
+  // Return sorted from oldest to newest
+  return weeklyData.sort((a, b) => 
+    parseISO(a.weekStart).getTime() - parseISO(b.weekStart).getTime()
+  );
 }
 
 /**
