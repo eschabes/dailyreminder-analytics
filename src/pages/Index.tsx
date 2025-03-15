@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { calculateAverageCompletionRate } from '@/lib/task-analytics';
+import { calculateAverageCompletionRate, calculateCurrentCompletionRate } from '@/lib/task-analytics';
 
 const Index = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData>({
@@ -22,6 +22,7 @@ const Index = () => {
     weeklyTrend: [],
   });
   const [averageCompletionRate, setAverageCompletionRate] = useState<number>(0);
+  const [currentCompletionRate, setCurrentCompletionRate] = useState<number>(0);
   const [activeView, setActiveView] = useState<'tasks' | 'analytics'>('tasks');
   const isMobile = useIsMobile();
 
@@ -30,12 +31,14 @@ const Index = () => {
     const allWeekData = loadAllWeekData();
     const calculatedAnalytics = calculateAnalytics(allWeekData);
     
-    // Calculate average completion rate from task data
+    // Calculate average and current completion rates from task data
     const weeklyTasks = loadWeeklyTasks();
     const avgRate = calculateAverageCompletionRate(weeklyTasks);
+    const currRate = calculateCurrentCompletionRate(weeklyTasks);
     
     setAnalytics(calculatedAnalytics);
     setAverageCompletionRate(avgRate);
+    setCurrentCompletionRate(currRate);
   };
 
   useEffect(() => {
@@ -80,6 +83,7 @@ const Index = () => {
             <AnalyticsPanel 
               analytics={analytics} 
               averageCompletionRate={averageCompletionRate}
+              currentCompletionRate={currentCompletionRate}
             />
           </div>
         ) : (

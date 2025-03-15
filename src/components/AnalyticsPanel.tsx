@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, Legend } from 'recharts';
@@ -16,9 +15,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface AnalyticsPanelProps {
   analytics: AnalyticsData;
   averageCompletionRate: number;
+  currentCompletionRate: number;
 }
 
-const AnalyticsPanel = ({ analytics, averageCompletionRate }: AnalyticsPanelProps) => {
+const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRate }: AnalyticsPanelProps) => {
   const [mounted, setMounted] = useState(false);
   const [tasks, setTasks] = useState<any[]>([]);
   const [activeDays, setActiveDays] = useState<any[]>([]);
@@ -159,7 +159,13 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate }: AnalyticsPanelProp
     
     // Get weekly completion data
     const weeklyCmpl = getWeeklyCompletions(weeklyTasks, 10);
-    setWeeklyCompletions(weeklyCmpl);
+    
+    // Filter out weeks with no data and keep only the last 6 weeks
+    const filteredWeeklyCmpl = weeklyCmpl
+      .filter(week => week.completions > 0 || week.rate > 0)
+      .slice(-6);
+      
+    setWeeklyCompletions(filteredWeeklyCmpl);
   };
 
   if (!mounted) {
@@ -205,7 +211,7 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate }: AnalyticsPanelProp
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm text-muted-foreground">Current Rate</span>
-                    <span className="text-2xl font-bold">{Math.round(analytics.completionRate || 0)}%</span>
+                    <span className="text-2xl font-bold">{currentCompletionRate}%</span>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm text-muted-foreground">Average Rate</span>

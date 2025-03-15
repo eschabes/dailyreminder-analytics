@@ -1,6 +1,6 @@
 
 import { WeeklyTask } from '@/types';
-import { differenceInDays, parseISO, format, isSameDay, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import { differenceInDays, parseISO, format, isSameDay, startOfWeek, endOfWeek, isWithinInterval, isToday, addDays } from 'date-fns';
 
 /**
  * Calculate days since last completion of a task
@@ -50,7 +50,7 @@ export function getTaskStatusColor(daysSince: number | null, interval: number | 
 /**
  * Check if the given date is today
  */
-export function isToday(dateStr: string): boolean {
+export function isDateToday(dateStr: string): boolean {
   return isSameDay(parseISO(dateStr), new Date());
 }
 
@@ -80,6 +80,35 @@ export function calculateTaskCompletionRate(task: WeeklyTask): number {
   
   // Calculate actual vs expected
   return Math.min(100, Math.round((task.completedDays.length / expectedCompletions) * 100));
+}
+
+/**
+ * Calculate current completion rate (tasks that are on schedule)
+ */
+export function calculateCurrentCompletionRate(tasks: WeeklyTask[]): number {
+  if (tasks.length === 0) return 0;
+  
+  // Filter tasks that have intervals set
+  const tasksWithIntervals = tasks.filter(task => !!task.interval);
+  if (tasksWithIntervals.length === 0) return 0;
+  
+  // Count tasks that are on schedule (not overdue)
+  let onScheduleTasks = 0;
+  
+  tasksWithIntervals.forEach(task => {
+    const daysSince = getDaysSinceLastCompletion(task);
+    
+    // If never completed or completed today, skip
+    if (daysSince === null) return;
+    
+    // Check if the task is within its interval
+    if (daysSince <= (task.interval || Infinity)) {
+      onScheduleTasks++;
+    }
+  });
+  
+  // Return the percentage of tasks that are on schedule
+  return Math.round((onScheduleTasks / tasksWithIntervals.length) * 100);
 }
 
 /**
