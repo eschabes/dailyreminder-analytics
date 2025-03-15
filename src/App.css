@@ -1,15 +1,14 @@
-
 #root {
-  max-width: 100%;
+  width: 100%;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 0.5rem;
   text-align: center;
 }
 
 @media (min-width: 768px) {
   #root {
     max-width: 1280px;
-    padding: 2rem;
+    padding: 1rem;
   }
 }
 
@@ -81,51 +80,51 @@
 
 .handle-column {
   left: 0;
+  width: 24px;
+  min-width: 24px;
+}
+
+.task-column {
+  left: 24px;
+  width: 90px;
+  min-width: 90px;
+}
+
+.days-column {
+  left: 114px;
   width: 30px;
   min-width: 30px;
 }
 
-.task-column {
-  left: 30px;
-  width: 100px;
-  min-width: 100px;
-}
-
-.days-column {
-  left: 130px;
-  width: 40px;
-  min-width: 40px;
-}
-
 /* Day columns - ensure consistent width */
 .day-column {
-  width: 42px;
-  min-width: 42px;
-  max-width: 42px;
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
 }
 
 @media (min-width: 640px) {
   .handle-column {
-    width: 36px;
-    min-width: 36px;
+    width: 28px;
+    min-width: 28px;
   }
 
   .task-column {
-    left: 36px;
-    width: 120px;
-    min-width: 120px;
+    left: 28px;
+    width: 100px;
+    min-width: 100px;
   }
   
   .days-column {
-    left: 156px;
-    width: 45px;
-    min-width: 45px;
+    left: 128px;
+    width: 36px;
+    min-width: 36px;
   }
   
   .day-column {
-    width: 45px;
-    min-width: 45px;
-    max-width: 45px;
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
   }
 }
 
