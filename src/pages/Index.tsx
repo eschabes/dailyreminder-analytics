@@ -3,13 +3,14 @@ import { useState, useEffect } from 'react';
 import WeeklyChecklist from '@/components/WeeklyChecklist';
 import AnalyticsPanel from '@/components/AnalyticsPanel';
 import { calculateAnalytics } from '@/lib/dates';
-import { loadAllWeekData } from '@/lib/storage';
+import { loadAllWeekData, loadWeeklyTasks } from '@/lib/storage';
 import { AnalyticsData } from '@/types';
 import { CheckSquare, LineChart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { calculateAverageCompletionRate } from '@/lib/task-analytics';
 
 const Index = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData>({
@@ -20,13 +21,21 @@ const Index = () => {
     leastProductiveDay: null,
     weeklyTrend: [],
   });
+  const [averageCompletionRate, setAverageCompletionRate] = useState<number>(0);
   const [activeView, setActiveView] = useState<'tasks' | 'analytics'>('tasks');
   const isMobile = useIsMobile();
 
   const updateAnalytics = () => {
+    // Load and calculate general analytics from week data
     const allWeekData = loadAllWeekData();
     const calculatedAnalytics = calculateAnalytics(allWeekData);
+    
+    // Calculate average completion rate from task data
+    const weeklyTasks = loadWeeklyTasks();
+    const avgRate = calculateAverageCompletionRate(weeklyTasks);
+    
     setAnalytics(calculatedAnalytics);
+    setAverageCompletionRate(avgRate);
   };
 
   useEffect(() => {
@@ -68,7 +77,10 @@ const Index = () => {
       <main className="w-full max-w-5xl mx-auto px-2 sm:px-4 mt-6 flex-1">
         {activeView === 'analytics' ? (
           <div className="animate-fade-in">
-            <AnalyticsPanel analytics={analytics} />
+            <AnalyticsPanel 
+              analytics={analytics} 
+              averageCompletionRate={averageCompletionRate}
+            />
           </div>
         ) : (
           <div className="animate-fade-in">

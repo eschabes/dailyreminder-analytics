@@ -1,27 +1,29 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
-import { CheckCircle2, Activity, TrendingUp, Calendar, BarChart2, Clock, Award, List } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, Legend } from 'recharts';
+import { CheckCircle2, Activity, TrendingUp, Calendar, BarChart2, Clock, Award, List, Percent } from 'lucide-react';
 import { AnalyticsData } from '@/types';
-import { format, parseISO, differenceInDays } from 'date-fns';
+import { format, parseISO, differenceInDays, subWeeks } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { loadWeeklyTasks } from '@/lib/storage';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { getDaysSinceLastCompletion, getTaskStatusColor } from '@/lib/task-analytics';
+import { getDaysSinceLastCompletion, getTaskStatusColor, getWeeklyCompletions, calculateTaskCompletionRate } from '@/lib/task-analytics';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AnalyticsPanelProps {
   analytics: AnalyticsData;
+  averageCompletionRate: number;
 }
 
-const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
+const AnalyticsPanel = ({ analytics, averageCompletionRate }: AnalyticsPanelProps) => {
   const [mounted, setMounted] = useState(false);
   const [tasks, setTasks] = useState<any[]>([]);
   const [activeDays, setActiveDays] = useState<any[]>([]);
   const [completionTrend, setCompletionTrend] = useState<any[]>([]);
+  const [weeklyCompletions, setWeeklyCompletions] = useState<any[]>([]);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -41,6 +43,9 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
         ? task.completedDays.sort((a, b) => parseISO(b).getTime() - parseISO(a).getTime())[0]
         : null;
         
+      // Calculate completion rate
+      const completionRate = calculateTaskCompletionRate(task);
+      
       // Calculate consistency (completions per week)
       const completionDates = task.completedDays.map(d => format(parseISO(d), 'yyyy-ww'));
       const uniqueWeeks = new Set(completionDates);
@@ -83,6 +88,7 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
         daysSinceLastCompletion: daysSince !== null ? daysSince : '-',
         statusColor,
         interval: task.interval || '-',
+        completionRate: `${completionRate}%`,
         averagePerWeek,
         currentStreak,
         createdAt: format(parseISO(task.createdAt), 'MMM d, yyyy')
@@ -116,7 +122,7 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
     
     setActiveDays(dayCount);
     
-    // Completion trend over time
+    // Completion trend over time (daily)
     const allCompletions = weeklyTasks.flatMap(task => 
       task.completedDays.map(date => ({
         date,
@@ -125,31 +131,35 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
       }))
     );
     
-    // Group by week
-    const weeklyCompletions = {};
+    // Group by day
+    const dailyCompletions = {};
     allCompletions.forEach(completion => {
-      const weekKey = format(parseISO(completion.date), 'yyyy-MM-dd');
-      if (!weeklyCompletions[weekKey]) {
-        weeklyCompletions[weekKey] = { 
-          date: weekKey,
+      const dayKey = format(parseISO(completion.date), 'yyyy-MM-dd');
+      if (!dailyCompletions[dayKey]) {
+        dailyCompletions[dayKey] = { 
+          date: dayKey,
           count: 0,
           tasks: new Set()
         };
       }
-      weeklyCompletions[weekKey].count++;
-      weeklyCompletions[weekKey].tasks.add(completion.taskId);
+      dailyCompletions[dayKey].count++;
+      dailyCompletions[dayKey].tasks.add(completion.taskId);
     });
     
-    const trendData = Object.values(weeklyCompletions)
+    const trendData = Object.values(dailyCompletions)
       .sort((a: any, b: any) => parseISO(a.date).getTime() - parseISO(b.date).getTime())
-      .map((week: any) => ({
-        date: format(parseISO(week.date), 'MMM d'),
-        completions: week.count,
-        uniqueTasks: week.tasks.size
+      .map((day: any) => ({
+        date: format(parseISO(day.date), 'MMM d'),
+        completions: day.count,
+        uniqueTasks: day.tasks.size
       }))
       .slice(-14); // Show last 14 days with data
       
     setCompletionTrend(trendData);
+    
+    // Get weekly completion data
+    const weeklyCmpl = getWeeklyCompletions(weeklyTasks, 10);
+    setWeeklyCompletions(weeklyCmpl);
   };
 
   if (!mounted) {
@@ -194,16 +204,12 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
                     <span className="text-2xl font-bold">{tasks.reduce((sum, t) => sum + t.totalCompleted, 0)}</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm text-muted-foreground">Completion Rate</span>
-                    <span className="text-2xl font-bold">{Math.round(analytics.completionRate)}%</span>
+                    <span className="text-sm text-muted-foreground">Current Rate</span>
+                    <span className="text-2xl font-bold">{Math.round(analytics.completionRate || 0)}%</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm text-muted-foreground">Best Day</span>
-                    <span className="text-2xl font-bold">
-                      {activeDays.length > 0 
-                        ? activeDays.reduce((best, day) => day.completions > best.completions ? day : best, activeDays[0]).name
-                        : "-"}
-                    </span>
+                    <span className="text-sm text-muted-foreground">Average Rate</span>
+                    <span className="text-2xl font-bold">{averageCompletionRate}%</span>
                   </div>
                 </div>
               </CardContent>
@@ -295,6 +301,7 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
                             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
                           }}
                         />
+                        <Legend />
                         <Line 
                           type="monotone"
                           dataKey="completions" 
@@ -303,6 +310,7 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
                           dot={{ r: 4 }}
                           activeDot={{ r: 6 }}
                           animationDuration={1000}
+                          name="Completions"
                         />
                         <Line 
                           type="monotone"
@@ -313,6 +321,7 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
                           dot={{ r: 4 }}
                           activeDot={{ r: 6 }}
                           animationDuration={1000}
+                          name="Unique Tasks"
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -386,9 +395,9 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
                           </div>
                           
                           <div className="flex items-center text-muted-foreground">
-                            <BarChart2 className="h-3.5 w-3.5 mr-1.5" />
-                            <span>Per week:</span>
-                            <span className="ml-1 font-medium text-foreground">{task.averagePerWeek}×</span>
+                            <Percent className="h-3.5 w-3.5 mr-1.5" />
+                            <span>Rate:</span>
+                            <span className="ml-1 font-medium text-foreground">{task.completionRate}</span>
                           </div>
                         </div>
                       </div>
@@ -409,17 +418,18 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium flex items-center">
                 <TrendingUp className="h-4 w-4 mr-2 text-primary" />
-                Weekly Completion Trend
+                Weekly Completion Rate
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-64 w-full">
-                {analytics.weeklyTrend.length > 0 ? (
+                {weeklyCompletions.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart 
-                      data={analytics.weeklyTrend.map(week => ({
+                      data={weeklyCompletions.map(week => ({
                         name: format(parseISO(week.date), 'MMM d'),
-                        rate: Math.round(week.completionRate),
+                        rate: week.rate,
+                        completions: week.completions
                       }))} 
                       margin={{ top: 20, right: 20, bottom: 20, left: 10 }}
                     >
@@ -438,7 +448,10 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
                         domain={[0, 100]}
                       />
                       <Tooltip
-                        formatter={(value) => [`${value}%`, 'Completion Rate']}
+                        formatter={(value, name) => {
+                          if (name === 'rate') return [`${value}%`, 'Completion Rate'];
+                          return [`${value}`, 'Total Completions'];
+                        }}
                         contentStyle={{ 
                           background: 'rgba(255, 255, 255, 0.95)', 
                           border: '1px solid rgba(0, 0, 0, 0.05)',
@@ -446,19 +459,35 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
                           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
                         }}
                       />
+                      <Legend />
                       <Bar 
                         dataKey="rate" 
                         fill="hsl(var(--primary))" 
                         radius={[4, 4, 0, 0]}
                         animationDuration={1000}
+                        name="Completion Rate"
+                      />
+                      <Bar 
+                        dataKey="completions" 
+                        fill="hsl(var(--muted-foreground))" 
+                        radius={[4, 4, 0, 0]}
+                        animationDuration={1000}
+                        name="Total Completions"
                       />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-muted-foreground text-sm">No trend data available yet</p>
+                    <p className="text-muted-foreground text-sm">No weekly trend data available yet</p>
                   </div>
                 )}
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-border/40">
+                <p className="text-sm text-muted-foreground">
+                  Completion rate is calculated based on the percentage of tasks completed compared to expected completions
+                  based on each task's interval setting. Higher percentages indicate better consistency in task completion.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -517,4 +546,3 @@ const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
 };
 
 export default AnalyticsPanel;
-
