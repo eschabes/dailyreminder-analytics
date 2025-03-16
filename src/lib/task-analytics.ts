@@ -216,7 +216,12 @@ export const getWeeklyCompletions = (tasks: WeeklyTask[], weeksToShow: number = 
     });
     
     // Calculate average rate for the week
-    const ratesSum = Object.values(week.dayRates).reduce((sum: number, rate: any) => sum + (rate as number), 0);
+    const ratesSum = Object.values(week.dayRates).reduce((sum: number, rate: any) => {
+      // Ensure rate is a number before adding
+      const numericRate = typeof rate === 'number' ? rate : 0;
+      return sum + numericRate;
+    }, 0);
+    
     week.avgRate = daysWithData > 0 ? Math.round(ratesSum / daysWithData) : 0;
   });
   
