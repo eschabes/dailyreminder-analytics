@@ -1,3 +1,4 @@
+
 import { format, parseISO, differenceInDays, subDays, startOfWeek, addDays, isAfter, compareAsc } from 'date-fns';
 import { WeeklyTask } from '@/types';
 
@@ -215,9 +216,36 @@ export const getWeeklyCompletions = (tasks: WeeklyTask[], weeksToShow: number = 
     });
     
     // Calculate average rate for the week
-    const ratesSum = Object.values(week.dayRates).reduce((sum: number, rate: number) => sum + rate, 0);
+    const ratesSum = Object.values(week.dayRates).reduce((sum: number, rate: any) => sum + (rate as number), 0);
     week.avgRate = daysWithData > 0 ? Math.round(ratesSum / daysWithData) : 0;
   });
   
   return weeks;
+};
+
+/**
+ * Prepare tasks data for export to Excel/CSV
+ */
+export const prepareTasksForExport = (tasks: WeeklyTask[]): any[] => {
+  if (!tasks.length) return [];
+  
+  return tasks.map(task => {
+    const completionRate = calculateTaskCompletionRate(task);
+    const daysSinceLastCompletion = getDaysSinceLastCompletion(task);
+    const status = daysSinceLastCompletion !== null && task.interval
+      ? daysSinceLastCompletion <= task.interval 
+        ? 'On schedule' 
+        : 'Overdue'
+      : 'Not tracked';
+      
+    return {
+      Name: task.name,
+      'Completion Rate (%)': completionRate,
+      'Days Since Last Completion': daysSinceLastCompletion || 'Never completed',
+      'Interval (days)': task.interval || 'Not set',
+      Status: status,
+      'Created On': format(parseISO(task.createdAt), 'MMM d, yyyy'),
+      'Total Completions': task.completedDays.length,
+    };
+  });
 };
