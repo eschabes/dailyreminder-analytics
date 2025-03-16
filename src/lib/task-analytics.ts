@@ -222,7 +222,9 @@ export const getWeeklyCompletions = (tasks: WeeklyTask[], weeksToShow: number = 
       return sum + numericRate;
     }, 0);
     
-    week.avgRate = daysWithData > 0 ? Math.round(ratesSum / daysWithData) : 0;
+    // Calculate the average rate safely
+    const avgRate = daysWithData > 0 ? Math.round(Number(ratesSum) / Number(daysWithData)) : 0;
+    week.avgRate = avgRate;
   });
   
   return weeks;
