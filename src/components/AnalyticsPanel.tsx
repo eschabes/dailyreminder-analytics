@@ -158,7 +158,7 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
     setCompletionTrend(trendData);
     
     // Get weekly completion data with improved metrics
-    const weeklyCmpl = getWeeklyCompletions(weeklyTasks, 6);
+    const weeklyCmpl = getWeeklyCompletions(weeklyTasks, 8);
     setWeeklyCompletions(weeklyCmpl);
   };
 
@@ -503,14 +503,15 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
                                   "w-full h-8 rounded-sm flex items-center justify-center text-xs font-medium",
                                   {
                                     "bg-primary/10 text-primary": day.rate > 0,
-                                    "bg-muted text-muted-foreground": day.rate === 0
+                                    "bg-muted text-muted-foreground": day.rate === 0,
+                                    "bg-muted/30 text-muted-foreground/50": day.isFuture
                                   }
                                 )}
                                 style={{
-                                  opacity: day.rate > 0 ? Math.max(0.3, day.rate / 100) : 0.1
+                                  opacity: day.rate > 0 ? Math.max(0.3, day.rate / 100) : day.isFuture ? 0.1 : 0.2
                                 }}
                               >
-                                {day.rate > 0 ? `${day.rate}%` : '-'}
+                                {day.isFuture ? 'N/A' : (day.rate > 0 ? `${day.rate}%` : '-')}
                               </div>
                             </div>
                           ))}
@@ -525,9 +526,9 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
               
               <div className="mt-4 pt-4 border-t border-border/40">
                 <p className="text-sm text-muted-foreground">
-                  Completion rate is calculated based on the percentage of tasks completed each day,
-                  and then averaged across days with activity. This provides a better representation
-                  of your consistency in completing tasks over time.
+                  Completion rate is calculated by looking at each day individually and checking if tasks were
+                  completed on that day or within their interval. Future dates are excluded from calculations.
+                  The weekly average combines the daily rates from days in that week.
                 </p>
               </div>
             </CardContent>
