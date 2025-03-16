@@ -70,16 +70,16 @@ export function getDisplayWeek(date: Date): string {
     return 'This Week';
   }
   
-  const weekDiff = getWeeksDifference(new Date(), date);
+  const weekDiff = getWeeksDifference(date, new Date());
   
-  if (weekDiff === -1) {
-    return 'Last Week';
-  } else if (weekDiff === 1) {
+  if (weekDiff === 1) {
     return 'Next Week';
-  } else if (weekDiff < 0) {
-    return `${Math.abs(weekDiff)} Weeks Ago`;
-  } else {
+  } else if (weekDiff === -1) {
+    return 'Last Week';
+  } else if (weekDiff > 0) {
     return `${weekDiff} Weeks From Now`;
+  } else {
+    return `${Math.abs(weekDiff)} Weeks Ago`;
   }
 }
 

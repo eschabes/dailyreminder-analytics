@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, CalendarClock } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarClock, CalendarCheck } from "lucide-react";
 import { formatWeekRange, isCurrentWeek, getDisplayWeek } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +55,19 @@ const WeekNavigation = ({
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
+        
+        {!isCurrentWeekActive && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onCurrentWeek}
+            className="h-9 w-9 rounded-full btn-hover bg-primary/10 text-primary hover:bg-primary/20"
+            title="Go to today"
+            aria-label="Go to today"
+          >
+            <CalendarCheck className="h-4 w-4" />
+          </Button>
+        )}
       </div>
       
       <div className="text-sm font-medium text-muted-foreground">
