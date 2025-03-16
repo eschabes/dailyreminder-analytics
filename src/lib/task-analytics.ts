@@ -1,5 +1,5 @@
 
-import { format, parseISO, differenceInDays, subDays, startOfWeek, addDays, isAfter, compareAsc } from 'date-fns';
+import { format, parseISO, differenceInDays, subDays, startOfWeek, addDays, isAfter, compareAsc, isSameDay } from 'date-fns';
 import { WeeklyTask } from '@/types';
 
 /**
@@ -49,7 +49,9 @@ export const getTaskStatusColor = (daysSince: number | null, interval?: number):
 export const isToday = (dateStr: string): boolean => {
   const today = new Date();
   const date = parseISO(dateStr);
-  return differenceInDays(today, date) === 0;
+  
+  // Use isSameDay from date-fns for correct date comparison
+  return isSameDay(today, date);
 };
 
 /**
