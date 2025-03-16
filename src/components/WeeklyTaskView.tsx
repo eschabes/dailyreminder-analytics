@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { WeeklyTask } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -59,18 +58,71 @@ const WeeklyTaskView = ({ currentDate, onAnalyticsUpdate }: WeeklyTaskViewProps)
     const updatedTasks = weeklyTasks.map(task => {
       if (task.id === taskId) {
         let completedDays = [...task.completedDays];
+        let completionCounts = { ...(task.completionCounts || {}) };
         
+        // Handle special operation commands
+        if (dateStr.startsWith('increment:')) {
+          const actualDate = dateStr.replace('increment:', '');
+          // Add to completed days if not already there
+          if (!completedDays.includes(actualDate)) {
+            completedDays.push(actualDate);
+          }
+          // Increment the count
+          completionCounts[actualDate] = (completionCounts[actualDate] || 0) + 1;
+          return {
+            ...task,
+            completedDays,
+            completionCounts,
+            updatedAt: new Date().toISOString(),
+          };
+        } else if (dateStr.startsWith('decrement:')) {
+          const actualDate = dateStr.replace('decrement:', '');
+          const currentCount = completionCounts[actualDate] || 0;
+          
+          if (currentCount > 1) {
+            // Decrement but keep as completed
+            completionCounts[actualDate] = currentCount - 1;
+          } else if (currentCount === 1) {
+            // Remove from completed days and set count to 0
+            completedDays = completedDays.filter(d => d !== actualDate);
+            completionCounts[actualDate] = 0;
+          }
+          
+          return {
+            ...task,
+            completedDays,
+            completionCounts,
+            updatedAt: new Date().toISOString(),
+          };
+        } else if (dateStr.startsWith('reset:')) {
+          const actualDate = dateStr.replace('reset:', '');
+          // Remove from completed days and reset count
+          completedDays = completedDays.filter(d => d !== actualDate);
+          completionCounts[actualDate] = 0;
+          
+          return {
+            ...task,
+            completedDays,
+            completionCounts,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        
+        // Legacy toggle behavior - but now with counts
         if (completedDays.includes(dateStr)) {
           // Remove date if already completed
           completedDays = completedDays.filter(d => d !== dateStr);
+          completionCounts[dateStr] = 0;
         } else {
           // Add date if not completed
           completedDays.push(dateStr);
+          completionCounts[dateStr] = 1;
         }
         
         return {
           ...task,
           completedDays,
+          completionCounts,
           updatedAt: new Date().toISOString(),
         };
       }

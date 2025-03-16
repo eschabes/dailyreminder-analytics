@@ -36,4 +36,5 @@ export interface WeeklyTask {
   createdAt: string;
   updatedAt: string;
   interval?: number; // Number of days until task should be done again
+  completionCounts?: Record<string, number>; // Map of date strings to completion counts
 }

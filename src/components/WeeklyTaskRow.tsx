@@ -40,6 +40,8 @@ const WeeklyTaskRow = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(task.name);
   const [editedInterval, setEditedInterval] = useState(task.interval?.toString() || '');
+  const [longPressTimers, setLongPressTimers] = useState<Record<string, NodeJS.Timeout | null>>({});
+  const [lastTapTime, setLastTapTime] = useState<Record<string, number>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   const taskNameRef = useRef<HTMLDivElement>(null);
   
@@ -90,6 +92,74 @@ const WeeklyTaskRow = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isEditing]);
+
+  // Clean up any lingering timers
+  useEffect(() => {
+    return () => {
+      Object.values(longPressTimers).forEach(timer => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, [longPressTimers]);
+
+  // Get completion count for a specific date
+  const getCompletionCount = (dateStr: string): number => {
+    const completions = task.completionCounts?.[dateStr] || 0;
+    return completions;
+  };
+
+  // Handle mouse down for long press
+  const handleMouseDown = (dateStr: string) => {
+    // Start timer for long press
+    const timer = setTimeout(() => {
+      // Reset completions to zero for this date
+      const updatedCounts = { ...(task.completionCounts || {}) };
+      updatedCounts[dateStr] = 0;
+      
+      // Call toggle with a special signal to update counts
+      onToggleDay(task.id, `reset:${dateStr}`);
+      
+      // Clear the timer
+      setLongPressTimers(prev => ({ ...prev, [dateStr]: null }));
+    }, 800); // 800ms for long press
+    
+    setLongPressTimers(prev => ({ ...prev, [dateStr]: timer }));
+  };
+
+  // Handle mouse up to cancel long press
+  const handleMouseUp = (dateStr: string) => {
+    const timer = longPressTimers[dateStr];
+    if (timer) {
+      clearTimeout(timer);
+      setLongPressTimers(prev => ({ ...prev, [dateStr]: null }));
+    }
+  };
+
+  // Handle click/tap on completion button
+  const handleCompletionClick = (dateStr: string) => {
+    // Cancel any long press timer
+    const timer = longPressTimers[dateStr];
+    if (timer) {
+      clearTimeout(timer);
+      setLongPressTimers(prev => ({ ...prev, [dateStr]: null }));
+    }
+    
+    // Check for double tap (within 300ms)
+    const now = Date.now();
+    const lastTap = lastTapTime[dateStr] || 0;
+    const isDoubleTap = now - lastTap < 300;
+    
+    // Update last tap time
+    setLastTapTime(prev => ({ ...prev, [dateStr]: now }));
+    
+    if (isDoubleTap) {
+      // Double tap - decrease count (but not below 0)
+      onToggleDay(task.id, `decrement:${dateStr}`);
+    } else {
+      // Single tap - increase count
+      onToggleDay(task.id, `increment:${dateStr}`);
+    }
+  };
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -187,7 +257,8 @@ const WeeklyTaskRow = ({
           </td>
           {weekDates.map((date) => {
             const dateStr = format(date, 'yyyy-MM-dd');
-            const isCompleted = task.completedDays.includes(dateStr);
+            const completionCount = getCompletionCount(dateStr);
+            const isCompleted = completionCount > 0;
             const isCurrentDay = isToday(dateStr);
             const isSelectedDay = selectedDate === dateStr;
             
@@ -201,16 +272,47 @@ const WeeklyTaskRow = ({
                   isSelectedDay && isCurrentDay ? "bg-current-selected-day" : ""
                 )}
               >
-                <button
-                  onClick={() => onToggleDay(task.id, dateStr)}
-                  className="mx-auto block transition-all"
-                >
-                  {isCompleted ? (
-                    <CheckCircle className="h-4 w-4 text-primary fill-primary" />
-                  ) : (
-                    <Circle className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => handleCompletionClick(dateStr)}
+                        onMouseDown={() => handleMouseDown(dateStr)}
+                        onMouseUp={() => handleMouseUp(dateStr)}
+                        onMouseLeave={() => handleMouseUp(dateStr)}
+                        onTouchStart={() => handleMouseDown(dateStr)}
+                        onTouchEnd={() => handleMouseUp(dateStr)}
+                        className="mx-auto block transition-all"
+                      >
+                        {isCompleted ? (
+                          <div className="relative">
+                            <CheckCircle className="h-4 w-4 text-primary fill-primary" />
+                            {completionCount > 1 && (
+                              <span className="absolute -top-2 -right-2 flex items-center justify-center bg-primary text-white rounded-full text-[9px] h-3.5 w-3.5 font-semibold">
+                                {completionCount}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <Circle className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs p-2">
+                      <p className="font-medium">{format(date, 'EEEE, MMM d')}</p>
+                      <p>
+                        {completionCount === 0 
+                          ? "Not completed" 
+                          : `Completed ${completionCount} ${completionCount === 1 ? "time" : "times"}`}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Single tap: +1 completion<br />
+                        Double tap: -1 completion<br />
+                        Long press: Reset to 0
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </td>
             );
           })}
