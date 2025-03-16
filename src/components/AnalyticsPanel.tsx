@@ -390,8 +390,8 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
                           
                           <div className="flex items-center text-muted-foreground">
                             <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-                            <span>Completions:</span>
-                            <span className="ml-1 font-medium text-foreground">{task.totalCompleted}</span>
+                            <span>Avg Per Week:</span>
+                            <span className="ml-1 font-medium text-foreground">{task.averagePerWeek}</span>
                           </div>
                           
                           <div className="flex items-center text-muted-foreground">
@@ -446,7 +446,7 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
                       <Tooltip
                         formatter={(value, name, props) => {
                           if (name === 'avgRate') return [`${value}%`, 'Average Rate'];
-                          if (name === 'completions') return [`${value}`, 'Total Completions'];
+                          if (name === 'completions') return [`${value}`, 'Avg Completions Per Week'];
                           return [value, name];
                         }}
                         labelFormatter={(label) => `Week of ${label}`}
@@ -470,7 +470,7 @@ const AnalyticsPanel = ({ analytics, averageCompletionRate, currentCompletionRat
                         fill="hsl(var(--muted-foreground))" 
                         radius={[4, 4, 0, 0]}
                         animationDuration={1000}
-                        name="Total Completions"
+                        name="Avg Completions Per Week"
                       />
                     </BarChart>
                   </ResponsiveContainer>
