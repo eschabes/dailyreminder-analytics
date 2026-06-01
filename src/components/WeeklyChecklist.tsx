@@ -1,15 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { WeekData } from '@/types';
-import { 
-  formatDate,
-  getWeekDates,
-  isCurrentWeek
-} from '@/lib/dates';
 import { getOrCreateWeekData } from '@/lib/storage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WeekNavigation from './WeekNavigation';
 import WeeklyTaskView from './WeeklyTaskView';
+import { addDays, startOfWeek } from 'date-fns';
 
 interface WeeklyChecklistProps {
   onAnalyticsUpdate: () => void;
@@ -19,6 +15,7 @@ const WeeklyChecklist = ({ onAnalyticsUpdate }: WeeklyChecklistProps) => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [weekData, setWeekData] = useState<WeekData | null>(null);
   const isMobile = useIsMobile();
+  const [view, setView] = useState<'today' | 'week'>(isMobile ? 'today' : 'week');
 
   // Load week data
   useEffect(() => {
@@ -26,15 +23,14 @@ const WeeklyChecklist = ({ onAnalyticsUpdate }: WeeklyChecklistProps) => {
     setWeekData(data);
   }, [currentDate]);
 
-  const handlePreviousWeek = () => {
-    setCurrentDate(prevDate => new Date(prevDate.getTime() - 7 * 24 * 60 * 60 * 1000));
+  const step = view === 'today' ? 1 : 7;
+  const handlePrevious = () => {
+    setCurrentDate(prev => addDays(prev, -step));
   };
-
-  const handleNextWeek = () => {
-    setCurrentDate(prevDate => new Date(prevDate.getTime() + 7 * 24 * 60 * 60 * 1000));
+  const handleNext = () => {
+    setCurrentDate(prev => addDays(prev, step));
   };
-
-  const handleCurrentWeek = () => {
+  const handleCurrent = () => {
     setCurrentDate(new Date());
   };
 
@@ -48,19 +44,25 @@ const WeeklyChecklist = ({ onAnalyticsUpdate }: WeeklyChecklistProps) => {
       </div>
     );
   }
-  
+
+  const navAnchor =
+    view === 'today' ? currentDate : new Date(weekData.startDate);
+
   return (
     <div className="space-y-6">
       <WeekNavigation
-        currentWeekStart={new Date(weekData.startDate)}
-        onPreviousWeek={handlePreviousWeek}
-        onNextWeek={handleNextWeek}
-        onCurrentWeek={handleCurrentWeek}
+        currentWeekStart={navAnchor}
+        onPreviousWeek={handlePrevious}
+        onNextWeek={handleNext}
+        onCurrentWeek={handleCurrent}
+        mode={view === 'today' ? 'day' : 'week'}
       />
-      
-      <WeeklyTaskView 
-        currentDate={currentDate} 
+
+      <WeeklyTaskView
+        currentDate={currentDate}
         onAnalyticsUpdate={onAnalyticsUpdate}
+        view={view}
+        onViewChange={setView}
       />
     </div>
   );

@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 interface TodayViewProps {
   tasks: WeeklyTask[];
+  date?: Date;
   onIncrement: (taskId: string, dateStr: string) => void;
   onDecrement: (taskId: string, dateStr: string) => void;
   onReset: (taskId: string, dateStr: string) => void;
@@ -17,9 +18,10 @@ interface TodayViewProps {
   onToggleShowAll: () => void;
 }
 
-const TodayView = ({ tasks, onIncrement, onDecrement, onReset, showAll, onToggleShowAll }: TodayViewProps) => {
-  const today = useMemo(() => new Date(), []);
+const TodayView = ({ tasks, date, onIncrement, onDecrement, onReset, showAll, onToggleShowAll }: TodayViewProps) => {
+  const today = useMemo(() => date ?? new Date(), [date]);
   const todayStr = format(today, 'yyyy-MM-dd');
+  const isToday = format(new Date(), 'yyyy-MM-dd') === todayStr;
 
   const visibleTasks = useMemo(() => {
     if (showAll) return tasks;
@@ -40,7 +42,9 @@ const TodayView = ({ tasks, onIncrement, onDecrement, onReset, showAll, onToggle
     <div className="space-y-3">
       <div className="flex items-center justify-between px-1">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">{format(today, 'EEEE')}</h2>
+          <h2 className="text-lg font-semibold tracking-tight">
+            {isToday ? 'Today' : format(today, 'EEEE')}
+          </h2>
           <p className="text-xs text-muted-foreground">{format(today, 'MMMM d, yyyy')}</p>
         </div>
         <div className="flex items-center gap-2">
