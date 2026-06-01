@@ -3,16 +3,20 @@ import { useState, useEffect } from 'react';
 import WeeklyChecklist from '@/components/WeeklyChecklist';
 import AnalyticsPanel from '@/components/AnalyticsPanel';
 import { calculateAnalytics } from '@/lib/dates';
-import { loadAllWeekData, loadWeeklyTasks } from '@/lib/storage';
+import { loadAllWeekData } from '@/lib/storage';
 import { AnalyticsData } from '@/types';
-import { CheckSquare, LineChart } from 'lucide-react';
+import { CheckSquare, LineChart, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { calculateAverageCompletionRate, calculateCurrentCompletionRate } from '@/lib/task-analytics';
+import { useAuth } from '@/hooks/useAuth';
+import { useWeeklyTasks } from '@/hooks/useWeeklyTasks';
 
 const Index = () => {
+  const { user, signOut } = useAuth();
+  const { tasks: cloudTasks } = useWeeklyTasks();
   const [analytics, setAnalytics] = useState<AnalyticsData>({
     totalItems: 0,
     completedItems: 0,
@@ -27,15 +31,10 @@ const Index = () => {
   const isMobile = useIsMobile();
 
   const updateAnalytics = () => {
-    // Load and calculate general analytics from week data
     const allWeekData = loadAllWeekData();
     const calculatedAnalytics = calculateAnalytics(allWeekData);
-    
-    // Calculate average and current completion rates from task data
-    const weeklyTasks = loadWeeklyTasks();
-    const avgRate = calculateAverageCompletionRate(weeklyTasks);
-    const currRate = calculateCurrentCompletionRate(weeklyTasks);
-    
+    const avgRate = calculateAverageCompletionRate(cloudTasks);
+    const currRate = calculateCurrentCompletionRate(cloudTasks);
     setAnalytics(calculatedAnalytics);
     setAverageCompletionRate(avgRate);
     setCurrentCompletionRate(currRate);
@@ -43,7 +42,8 @@ const Index = () => {
 
   useEffect(() => {
     updateAnalytics();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudTasks]);
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-background text-foreground pb-10">
@@ -72,6 +72,16 @@ const Index = () => {
             >
               <LineChart className="h-4 w-4" />
               <span className={cn("", {"hidden": isMobile})}>Analytics</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => signOut()}
+              className="flex items-center gap-1"
+              title={user?.email ?? 'Sign out'}
+            >
+              <LogOut className="h-4 w-4" />
+              <span className={cn("", {"hidden": isMobile})}>Sign out</span>
             </Button>
           </div>
         </div>
