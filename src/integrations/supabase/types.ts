@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      weekly_tasks: {
+        Row: {
+          completed_days: string[]
+          completion_counts: Json
+          created_at: string
+          id: string
+          interval: number | null
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_days?: string[]
+          completion_counts?: Json
+          created_at?: string
+          id?: string
+          interval?: number | null
+          name: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_days?: string[]
+          completion_counts?: Json
+          created_at?: string
+          id?: string
+          interval?: number | null
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
