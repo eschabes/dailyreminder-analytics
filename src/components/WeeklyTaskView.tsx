@@ -18,14 +18,21 @@ import { useWeeklyTasks } from '@/hooks/useWeeklyTasks';
 interface WeeklyTaskViewProps {
   currentDate: Date;
   onAnalyticsUpdate: () => void;
+  view?: 'today' | 'week';
+  onViewChange?: (view: 'today' | 'week') => void;
 }
 
-const WeeklyTaskView = ({ currentDate, onAnalyticsUpdate }: WeeklyTaskViewProps) => {
+const WeeklyTaskView = ({ currentDate, onAnalyticsUpdate, view: viewProp, onViewChange }: WeeklyTaskViewProps) => {
   const isMobile = useIsMobile();
   const weekDates = getWeekDates(currentDate);
   const { tasks: weeklyTasks, loading, addTask, updateTask, deleteTask, reorder } =
     useWeeklyTasks();
-  const [view, setView] = useState<'today' | 'week'>(isMobile ? 'today' : 'week');
+  const [internalView, setInternalView] = useState<'today' | 'week'>(isMobile ? 'today' : 'week');
+  const view = viewProp ?? internalView;
+  const setView = (v: 'today' | 'week') => {
+    if (onViewChange) onViewChange(v);
+    else setInternalView(v);
+  };
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
@@ -160,6 +167,7 @@ const WeeklyTaskView = ({ currentDate, onAnalyticsUpdate }: WeeklyTaskViewProps)
         ) : view === 'today' ? (
           <TodayView
             tasks={weeklyTasks}
+            date={currentDate}
             onIncrement={(id, d) => applyOp(id, `increment:${d}`)}
             onDecrement={(id, d) => applyOp(id, `decrement:${d}`)}
             onReset={(id, d) => applyOp(id, `reset:${d}`)}
