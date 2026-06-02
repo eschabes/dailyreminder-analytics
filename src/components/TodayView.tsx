@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { format } from 'date-fns';
 import { WeeklyTask } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Minus, Plus, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { getDaysSinceLastCompletion } from '@/lib/task-analytics';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +19,39 @@ interface TodayViewProps {
 }
 
 const TodayView = ({ tasks, date, onIncrement, onDecrement, onReset, showAll, onToggleShowAll }: TodayViewProps) => {
+  const longPressTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const longPressFired = useRef<Record<string, boolean>>({});
+
+  const startPress = (taskId: string, dateStr: string) => {
+    longPressFired.current[taskId] = false;
+    longPressTimers.current[taskId] = setTimeout(() => {
+      longPressFired.current[taskId] = true;
+      onReset(taskId, dateStr);
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate?.(30);
+      }
+    }, 600);
+  };
+  const endPress = (taskId: string, dateStr: string) => {
+    const t = longPressTimers.current[taskId];
+    if (t) {
+      clearTimeout(t);
+      delete longPressTimers.current[taskId];
+    }
+    if (!longPressFired.current[taskId]) {
+      onIncrement(taskId, dateStr);
+    }
+    longPressFired.current[taskId] = false;
+  };
+  const cancelPress = (taskId: string) => {
+    const t = longPressTimers.current[taskId];
+    if (t) {
+      clearTimeout(t);
+      delete longPressTimers.current[taskId];
+    }
+    longPressFired.current[taskId] = true; // prevent click after cancel
+  };
+
   const today = useMemo(() => date ?? new Date(), [date]);
   const todayStr = format(today, 'yyyy-MM-dd');
   const isToday = format(new Date(), 'yyyy-MM-dd') === todayStr;
@@ -100,43 +133,30 @@ const TodayView = ({ tasks, date, onIncrement, onDecrement, onReset, showAll, on
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-10 w-10 rounded-full"
-                    onClick={() => onDecrement(task.id, todayStr)}
-                    disabled={count === 0}
-                    aria-label="Decrease"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <div className="min-w-[2rem] text-center font-semibold text-base tabular-nums">
-                    {count}
-                  </div>
-                  <Button
-                    type="button"
-                    size="icon"
-                    className="h-12 w-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-                    onClick={() => onIncrement(task.id, todayStr)}
-                    aria-label="Add set"
-                  >
-                    <Plus className="h-5 w-5" />
-                  </Button>
-                  {count > 0 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground"
-                      onClick={() => onReset(task.id, todayStr)}
-                      aria-label="Reset"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                    </Button>
+                <button
+                  type="button"
+                  aria-label={`${count} sets. Tap to add, hold to reset.`}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    startPress(task.id, todayStr);
+                  }}
+                  onPointerUp={(e) => {
+                    e.preventDefault();
+                    endPress(task.id, todayStr);
+                  }}
+                  onPointerLeave={() => cancelPress(task.id)}
+                  onPointerCancel={() => cancelPress(task.id)}
+                  onContextMenu={(e) => e.preventDefault()}
+                  className={cn(
+                    'h-16 w-16 rounded-2xl flex items-center justify-center select-none',
+                    'font-bold text-2xl tabular-nums shadow-sm active:scale-95 transition-transform',
+                    count > 0
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-foreground border border-border'
                   )}
-                </div>
+                >
+                  {count === 0 ? '+' : count}
+                </button>
               </Card>
             );
           })}
