@@ -62,6 +62,68 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
   const now = new Date();
 
+  const url = new URL(req.url);
+  const isTest = url.searchParams.get("test") === "1" || req.headers.get("x-test") === "1";
+
+  // Instant test mode: push to every subscription for the calling user, ignoring schedule
+  if (isTest) {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Missing Authorization" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userData.user) {
+      return new Response(JSON.stringify({ error: userErr?.message ?? "Invalid token" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: subs } = await supabase
+      .from("push_subscriptions")
+      .select("*")
+      .eq("user_id", userData.user.id);
+
+    const payload = JSON.stringify({
+      title: "TrackrDaily test",
+      body: "If you see this, push notifications are working 🎉",
+      url: "/",
+      tag: `test-${Date.now()}`,
+    });
+
+    const results: any[] = [];
+    for (const sub of subs ?? []) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          payload,
+        );
+        results.push({ endpoint: sub.endpoint.slice(0, 40), ok: true });
+      } catch (e: any) {
+        results.push({
+          endpoint: sub.endpoint.slice(0, 40),
+          ok: false,
+          statusCode: e?.statusCode,
+          body: e?.body,
+          message: e?.message,
+        });
+        if (e?.statusCode === 404 || e?.statusCode === 410) {
+          await supabase.from("push_subscriptions").delete().eq("id", sub.id);
+        }
+      }
+    }
+    return new Response(
+      JSON.stringify({
+        test: true,
+        subscriptions: subs?.length ?? 0,
+        vapid_public_prefix: VAPID_PUBLIC.slice(0, 16),
+        results,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   const { data: reminders, error } = await supabase
     .from("notification_reminders")
     .select("*")
