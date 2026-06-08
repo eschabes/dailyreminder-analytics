@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { disablePush, enablePush, isPushEnabled, pushSupported } from "@/lib/push";
+import { VAPID_PUBLIC_KEY } from "@/lib/push";
 import { cn } from "@/lib/utils";
 
 type Reminder = {
@@ -69,6 +70,37 @@ const Settings = () => {
       setPushOn(false);
     }
     setBusy(false);
+  };
+
+  const sendTest = async () => {
+    setBusy(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) { toast.error("Not signed in"); return; }
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-reminders?test=1`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+      );
+      const json = await res.json();
+      console.log("[push test]", json, "client vapid prefix:", VAPID_PUBLIC_KEY.slice(0, 16));
+      if (!res.ok) { toast.error(json.error || "Test failed"); return; }
+      if (!json.subscriptions) {
+        toast.error("No push subscription on this device. Enable notifications first.");
+        return;
+      }
+      const okCount = (json.results || []).filter((r: any) => r.ok).length;
+      const failed = (json.results || []).filter((r: any) => !r.ok);
+      if (failed.length) {
+        toast.error(`Push failed: ${failed[0].statusCode} ${failed[0].body || failed[0].message || ""}`);
+      } else {
+        toast.success(`Sent test to ${okCount} device(s)`);
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const addReminder = async () => {
