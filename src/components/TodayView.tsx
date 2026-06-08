@@ -16,9 +16,10 @@ interface TodayViewProps {
   onReset: (taskId: string, dateStr: string) => void;
   showAll: boolean;
   onToggleShowAll: () => void;
+  onEditTask?: (taskId: string) => void;
 }
 
-const TodayView = ({ tasks, date, onIncrement, onDecrement, onReset, showAll, onToggleShowAll }: TodayViewProps) => {
+const TodayView = ({ tasks, date, onIncrement, onDecrement, onReset, showAll, onToggleShowAll, onEditTask }: TodayViewProps) => {
   const longPressTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const longPressFired = useRef<Record<string, boolean>>({});
 
@@ -122,7 +123,12 @@ const TodayView = ({ tasks, date, onIncrement, onDecrement, onReset, showAll, on
                       : 'border-l-muted'
                 )}
               >
-                <div className="flex-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => onEditTask?.(task.id)}
+                  className="flex-1 min-w-0 text-left rounded-lg -mx-1 px-1 py-1 hover:bg-muted/50 active:bg-muted transition-colors"
+                  aria-label={`Edit ${task.name}`}
+                >
                   <div className="font-medium text-sm truncate">{task.name}</div>
                   <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
                     {task.interval ? <span>every {task.interval}d</span> : <span>no interval</span>}
@@ -131,7 +137,7 @@ const TodayView = ({ tasks, date, onIncrement, onDecrement, onReset, showAll, on
                     )}
                     {completed && <span>· {count} {count === 1 ? 'set' : 'sets'}</span>}
                   </div>
-                </div>
+                </button>
 
                 <button
                   type="button"
