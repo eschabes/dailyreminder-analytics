@@ -173,6 +173,12 @@ const Settings = () => {
             </div>
             <Switch checked={pushOn} disabled={!supported || busy} onCheckedChange={togglePush} />
           </div>
+          <div className="mt-3 pt-3 border-t border-border/60 flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">Send a test notification right now.</p>
+            <Button size="sm" variant="secondary" onClick={sendTest} disabled={busy || !pushOn}>
+              Send test
+            </Button>
+          </div>
         </Card>
 
         <div className="flex items-center justify-between px-1">
