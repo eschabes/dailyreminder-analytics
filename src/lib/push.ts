@@ -31,6 +31,19 @@ function abToB64Url(buf: ArrayBuffer | null) {
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+function keysMatch(
+  a: ArrayBuffer | null | undefined,
+  b: Uint8Array,
+) {
+  if (!a) return false;
+  const current = new Uint8Array(a);
+  if (current.byteLength !== b.byteLength) return false;
+  for (let i = 0; i < current.byteLength; i++) {
+    if (current[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 export async function registerPushSW(): Promise<ServiceWorkerRegistration | null> {
   if (!pushSupported()) return null;
   try {
@@ -59,8 +72,13 @@ export async function enablePush(
   if (!reg) return { ok: false, reason: "Could not register service worker." };
   await navigator.serviceWorker.ready;
 
+  const serverKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
   let sub = await reg.pushManager.getSubscription();
-  if (sub && options.forceRefresh) {
+  const staleKey =
+    !!sub && !keysMatch(sub.options?.applicationServerKey ?? null, serverKey);
+
+  if (sub && (options.forceRefresh || staleKey)) {
     await supabase
       .from("push_subscriptions")
       .delete()
@@ -72,7 +90,7 @@ export async function enablePush(
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      applicationServerKey: serverKey,
     });
   }
 
@@ -120,5 +138,9 @@ export async function isPushEnabled(): Promise<boolean> {
   if (!pushSupported() || Notification.permission !== "granted") return false;
   const reg = await navigator.serviceWorker.getRegistration("/");
   const sub = await reg?.pushManager.getSubscription();
-  return !!sub;
+  if (!sub) return false;
+  return keysMatch(
+    sub.options?.applicationServerKey ?? null,
+    urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+  );
 }
