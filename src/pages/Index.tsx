@@ -1,6 +1,6 @@
 
 import WeeklyChecklist from '@/components/WeeklyChecklist';
-import { CheckSquare, FileSpreadsheet, LogOut } from 'lucide-react';
+import { CheckSquare, FileSpreadsheet, LogOut, Settings as SettingsIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,19 @@ const Index = () => {
           </Link>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="flex items-center gap-1"
+              title="Settings"
+            >
+              <Link to="/settings">
+                <SettingsIcon className="h-4 w-4" />
+                <span className={cn('', { hidden: isMobile })}>Settings</span>
+              </Link>
+            </Button>
+
             <Button
               variant="outline"
               size="sm"
