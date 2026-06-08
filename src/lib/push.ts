@@ -9,6 +9,10 @@ export const pushSupported = () =>
   "PushManager" in window &&
   "Notification" in window;
 
+type EnablePushOptions = {
+  forceRefresh?: boolean;
+};
+
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -36,7 +40,9 @@ export async function registerPushSW(): Promise<ServiceWorkerRegistration | null
   }
 }
 
-export async function enablePush(): Promise<{ ok: boolean; reason?: string }> {
+export async function enablePush(
+  options: EnablePushOptions = {},
+): Promise<{ ok: boolean; reason?: string }> {
   if (!pushSupported()) return { ok: false, reason: "Push not supported in this browser." };
 
   const permission = await Notification.requestPermission();
@@ -47,6 +53,12 @@ export async function enablePush(): Promise<{ ok: boolean; reason?: string }> {
   await navigator.serviceWorker.ready;
 
   let sub = await reg.pushManager.getSubscription();
+  if (sub && options.forceRefresh) {
+    await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+    await sub.unsubscribe();
+    sub = null;
+  }
+
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
