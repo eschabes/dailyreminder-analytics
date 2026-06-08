@@ -67,7 +67,7 @@ const Auth = () => {
         <CardHeader className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 text-xl font-bold">
             <CheckSquare className="h-6 w-6 text-primary" />
-            <span>WeeklyTrack</span>
+            <span>TrackrDaily</span>
           </div>
           <p className="text-sm text-muted-foreground">
             {mode === 'signin' ? 'Sign in to sync your tasks across devices' : 'Create an account to get started'}
