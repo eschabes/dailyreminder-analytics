@@ -60,26 +60,11 @@ const WeeklyTaskView = ({ currentDate }: WeeklyTaskViewProps) => {
     updateTask(taskId, { completedDays, completionCounts });
   };
 
-  const handleExportToExcel = () => {
-    exportTasksToExcel(weeklyTasks);
-    toast.success('Export successful', { description: 'Tasks exported to CSV' });
-  };
 
   const editingTask = weeklyTasks.find((t) => t.id === editingId) ?? null;
 
   return (
     <Card className="neomorphism border-none mb-6">
-      <CardHeader
-        className={cn(
-          'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3',
-          'px-2 sm:px-6 py-3 sm:py-4'
-        )}
-      >
-        <div className="flex items-center justify-end w-full">
-          <ExportButton onExport={handleExportToExcel} disabled={weeklyTasks.length === 0} />
-        </div>
-      </CardHeader>
-
       <CardHeader
         className={cn(
           'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-0',
