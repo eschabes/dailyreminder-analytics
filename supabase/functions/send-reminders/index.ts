@@ -1,18 +1,19 @@
 // Sends web push reminders for users whose scheduled time matches "now"
 // in their timezone, when they still have due-today tasks with 0 sets.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-import webpush from "https://esm.sh/web-push@3.6.7";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import webpush from "npm:web-push@3.6.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:reminders@trackrdaily.app";
+const rawVapidSubject = Deno.env.get("VAPID_SUBJECT") ?? "reminders@trackrdaily.app";
+const VAPID_SUBJECT = rawVapidSubject.startsWith("mailto:") || rawVapidSubject.startsWith("https://")
+  ? rawVapidSubject
+  : rawVapidSubject.includes("@")
+    ? `mailto:${rawVapidSubject}`
+    : "mailto:reminders@trackrdaily.app";
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
