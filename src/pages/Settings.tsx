@@ -72,6 +72,21 @@ const Settings = () => {
     setBusy(false);
   };
 
+  const refreshSubscription = async () => {
+    setBusy(true);
+    try {
+      const r = await enablePush({ forceRefresh: true });
+      if (!r.ok) {
+        toast.error(r.reason || "Could not refresh notifications");
+        return;
+      }
+      setPushOn(await isPushEnabled());
+      toast.success("Notification subscription refreshed on this device");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const sendTest = async () => {
     setBusy(true);
     try {
@@ -80,7 +95,7 @@ const Settings = () => {
       if (!token) { toast.error("Not signed in"); return; }
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-reminders?test=1`,
-        { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+        { method: "POST", headers: { Authorization: `Bearer ${token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } },
       );
       const json = await res.json();
       console.log("[push test]", json, "client vapid prefix:", VAPID_PUBLIC_KEY.slice(0, 16));
@@ -175,9 +190,14 @@ const Settings = () => {
           </div>
           <div className="mt-3 pt-3 border-t border-border/60 flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">Send a test notification right now.</p>
-            <Button size="sm" variant="secondary" onClick={sendTest} disabled={busy || !pushOn}>
-              Send test
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={refreshSubscription} disabled={busy || !supported}>
+                Refresh device
+              </Button>
+              <Button size="sm" variant="secondary" onClick={sendTest} disabled={busy || !pushOn}>
+                Send test
+              </Button>
+            </div>
           </div>
         </Card>
 
