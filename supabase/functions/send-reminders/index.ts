@@ -138,7 +138,11 @@ Deno.serve(async (req) => {
           body: e?.body,
           message: e?.message,
         });
-        if (e?.statusCode === 404 || e?.statusCode === 410) {
+        if (
+          e?.statusCode === 403 ||
+          e?.statusCode === 404 ||
+          e?.statusCode === 410
+        ) {
           await supabase.from("push_subscriptions").delete().eq("id", sub.id);
         }
       }
@@ -246,7 +250,11 @@ Deno.serve(async (req) => {
       } catch (e: any) {
         failed++;
         // Clean up gone subscriptions
-        if (e?.statusCode === 404 || e?.statusCode === 410) {
+        if (
+          e?.statusCode === 403 ||
+          e?.statusCode === 404 ||
+          e?.statusCode === 410
+        ) {
           await supabase.from("push_subscriptions").delete().eq("id", sub.id);
         }
         console.error("push failed", e?.statusCode, e?.body ?? e?.message);
