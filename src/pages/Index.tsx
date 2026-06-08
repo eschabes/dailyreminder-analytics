@@ -1,15 +1,25 @@
 
 import WeeklyChecklist from '@/components/WeeklyChecklist';
-import { CheckSquare, LogOut } from 'lucide-react';
+import { CheckSquare, FileSpreadsheet, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
+import { useWeeklyTasks } from '@/hooks/useWeeklyTasks';
+import { exportTasksToExcel } from '@/lib/excel-export';
+import { toast } from 'sonner';
 
 const Index = () => {
   const { user, signOut } = useAuth();
   const isMobile = useIsMobile();
+  const { tasks } = useWeeklyTasks();
+
+  const handleExport = () => {
+    if (!tasks.length) return;
+    exportTasksToExcel(tasks);
+    toast.success('Export successful', { description: 'Tasks exported to CSV' });
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-background text-foreground pb-10">
@@ -20,16 +30,30 @@ const Index = () => {
             <span>TrackrDaily</span>
           </Link>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => signOut()}
-            className="flex items-center gap-1"
-            title={user?.email ?? 'Sign out'}
-          >
-            <LogOut className="h-4 w-4" />
-            <span className={cn('', { hidden: isMobile })}>Sign out</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={!tasks.length}
+              className="flex items-center gap-1"
+              title="Export to CSV"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className={cn('', { hidden: isMobile })}>Export</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => signOut()}
+              className="flex items-center gap-1"
+              title={user?.email ?? 'Sign out'}
+            >
+              <LogOut className="h-4 w-4" />
+              <span className={cn('', { hidden: isMobile })}>Sign out</span>
+            </Button>
+          </div>
         </div>
       </header>
 
