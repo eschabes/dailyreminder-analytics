@@ -8,14 +8,25 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { disablePush, enablePush, isPushEnabled, pushSupported } from "@/lib/push";
+import {
+  disablePush,
+  enablePush,
+  isPushEnabled,
+  pushSupported,
+} from "@/lib/push";
 import { VAPID_PUBLIC_KEY } from "@/lib/push";
 import { cn } from "@/lib/utils";
 
@@ -92,22 +103,43 @@ const Settings = () => {
     try {
       const { data: sess } = await supabase.auth.getSession();
       const token = sess.session?.access_token;
-      if (!token) { toast.error("Not signed in"); return; }
+      if (!token) {
+        toast.error("Not signed in");
+        return;
+      }
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-reminders?test=1`,
-        { method: "POST", headers: { Authorization: `Bearer ${token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } },
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        },
       );
       const json = await res.json();
-      console.log("[push test]", json, "client vapid prefix:", VAPID_PUBLIC_KEY.slice(0, 16));
-      if (!res.ok) { toast.error(json.error || "Test failed"); return; }
+      console.log(
+        "[push test]",
+        json,
+        "client vapid prefix:",
+        VAPID_PUBLIC_KEY.slice(0, 16),
+      );
+      if (!res.ok) {
+        toast.error(json.error || "Test failed");
+        return;
+      }
       if (!json.subscriptions) {
-        toast.error("No push subscription on this device. Enable notifications first.");
+        toast.error(
+          "No push subscription on this device. Enable notifications first.",
+        );
         return;
       }
       const okCount = (json.results || []).filter((r: any) => r.ok).length;
       const failed = (json.results || []).filter((r: any) => !r.ok);
       if (failed.length) {
-        toast.error(`Push failed: ${failed[0].statusCode} ${failed[0].body || failed[0].message || ""}`);
+        toast.error(
+          `Push failed: ${failed[0].statusCode} ${failed[0].body || failed[0].message || ""}`,
+        );
       } else {
         toast.success(`Sent test to ${okCount} device(s)`);
       }
@@ -148,7 +180,10 @@ const Settings = () => {
 
   const deleteReminder = async (id: string) => {
     setReminders((rs) => rs.filter((r) => r.id !== id));
-    const { error } = await supabase.from("notification_reminders").delete().eq("id", id);
+    const { error } = await supabase
+      .from("notification_reminders")
+      .delete()
+      .eq("id", id);
     if (error) toast.error(error.message);
   };
 
@@ -163,7 +198,10 @@ const Settings = () => {
     <div className="min-h-screen flex flex-col items-center bg-background text-foreground pb-10">
       <header className="w-full bg-background pt-4 pb-2 px-2 sm:px-4 border-b border-border/40 sticky top-0 z-10 backdrop-blur-sm">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2 text-sm font-medium hover:opacity-80">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-sm font-medium hover:opacity-80"
+          >
             <ArrowLeft className="h-4 w-4" />
             <span>Back</span>
           </Link>
@@ -177,7 +215,11 @@ const Settings = () => {
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 font-semibold">
-                {pushOn ? <Bell className="h-4 w-4 text-primary" /> : <BellOff className="h-4 w-4 text-muted-foreground" />}
+                {pushOn ? (
+                  <Bell className="h-4 w-4 text-primary" />
+                ) : (
+                  <BellOff className="h-4 w-4 text-muted-foreground" />
+                )}
                 Push notifications
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -186,15 +228,31 @@ const Settings = () => {
                   : "This browser doesn't support push notifications. Try the installed PWA or a different browser."}
               </p>
             </div>
-            <Switch checked={pushOn} disabled={!supported || busy} onCheckedChange={togglePush} />
+            <Switch
+              checked={pushOn}
+              disabled={!supported || busy}
+              onCheckedChange={togglePush}
+            />
           </div>
           <div className="mt-3 pt-3 border-t border-border/60 flex items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">Send a test notification right now.</p>
+            <p className="text-xs text-muted-foreground">
+              Send a test notification right now.
+            </p>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={refreshSubscription} disabled={busy || !supported}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={refreshSubscription}
+                disabled={busy || !supported}
+              >
                 Refresh device
               </Button>
-              <Button size="sm" variant="secondary" onClick={sendTest} disabled={busy || !pushOn}>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={sendTest}
+                disabled={busy || !pushOn}
+              >
                 Send test
               </Button>
             </div>
@@ -214,27 +272,39 @@ const Settings = () => {
           <p className="text-sm text-muted-foreground px-1">Loading…</p>
         ) : reminders.length === 0 ? (
           <Card className="p-6 text-center text-sm text-muted-foreground">
-            No reminders yet. Add one to get nudged when you still have due tasks.
+            No reminders yet. Add one to get nudged when you still have due
+            tasks.
           </Card>
         ) : (
           <div className="space-y-3">
             {reminders.map((r) => (
-              <Card key={r.id} className={cn("p-4 space-y-3", !r.enabled && "opacity-60")}>
+              <Card
+                key={r.id}
+                className={cn("p-4 space-y-3", !r.enabled && "opacity-60")}
+              >
                 <div className="flex items-center justify-between gap-3">
                   <Input
                     type="time"
                     value={r.time_of_day}
-                    onChange={(e) => updateReminder(r.id, { time_of_day: e.target.value })}
+                    onChange={(e) =>
+                      updateReminder(r.id, { time_of_day: e.target.value })
+                    }
                     className="w-32 text-lg font-medium"
                   />
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={r.enabled}
-                      onCheckedChange={(v) => updateReminder(r.id, { enabled: v })}
+                      onCheckedChange={(v) =>
+                        updateReminder(r.id, { enabled: v })
+                      }
                     />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-destructive"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -242,12 +312,15 @@ const Settings = () => {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete reminder?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This reminder will stop firing. You can always add a new one.
+                            This reminder will stop firing. You can always add a
+                            new one.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteReminder(r.id)}>
+                          <AlertDialogAction
+                            onClick={() => deleteReminder(r.id)}
+                          >
                             Delete
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -282,10 +355,14 @@ const Settings = () => {
                 </div>
 
                 <div>
-                  <Label className="text-xs text-muted-foreground">Custom message (optional)</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Custom message (optional)
+                  </Label>
                   <Textarea
                     value={r.message ?? ""}
-                    onChange={(e) => updateReminder(r.id, { message: e.target.value })}
+                    onChange={(e) =>
+                      updateReminder(r.id, { message: e.target.value })
+                    }
                     placeholder="Leave empty to use a random encouraging message"
                     rows={2}
                     className="mt-1.5 resize-none"
@@ -293,7 +370,8 @@ const Settings = () => {
                 </div>
 
                 <p className="text-[11px] text-muted-foreground">
-                  Timezone: {r.timezone} · Only fires when you still have unfinished due tasks.
+                  Timezone: {r.timezone} · Only fires when you still have
+                  unfinished due tasks.
                 </p>
               </Card>
             ))}

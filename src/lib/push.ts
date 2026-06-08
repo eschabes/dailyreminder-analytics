@@ -26,14 +26,17 @@ function abToB64Url(buf: ArrayBuffer | null) {
   if (!buf) return "";
   const bytes = new Uint8Array(buf);
   let str = "";
-  for (let i = 0; i < bytes.byteLength; i++) str += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.byteLength; i++)
+    str += String.fromCharCode(bytes[i]);
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 export async function registerPushSW(): Promise<ServiceWorkerRegistration | null> {
   if (!pushSupported()) return null;
   try {
-    return await navigator.serviceWorker.register("/push-sw.js", { scope: "/" });
+    return await navigator.serviceWorker.register("/push-sw.js", {
+      scope: "/",
+    });
   } catch (e) {
     console.error("SW register failed", e);
     return null;
@@ -43,18 +46,25 @@ export async function registerPushSW(): Promise<ServiceWorkerRegistration | null
 export async function enablePush(
   options: EnablePushOptions = {},
 ): Promise<{ ok: boolean; reason?: string }> {
-  if (!pushSupported()) return { ok: false, reason: "Push not supported in this browser." };
+  if (!pushSupported())
+    return { ok: false, reason: "Push not supported in this browser." };
 
   const permission = await Notification.requestPermission();
-  if (permission !== "granted") return { ok: false, reason: "Notification permission denied." };
+  if (permission !== "granted")
+    return { ok: false, reason: "Notification permission denied." };
 
-  const reg = (await navigator.serviceWorker.getRegistration("/")) || (await registerPushSW());
+  const reg =
+    (await navigator.serviceWorker.getRegistration("/")) ||
+    (await registerPushSW());
   if (!reg) return { ok: false, reason: "Could not register service worker." };
   await navigator.serviceWorker.ready;
 
   let sub = await reg.pushManager.getSubscription();
   if (sub && options.forceRefresh) {
-    await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+    await supabase
+      .from("push_subscriptions")
+      .delete()
+      .eq("endpoint", sub.endpoint);
     await sub.unsubscribe();
     sub = null;
   }
@@ -72,13 +82,23 @@ export async function enablePush(
 
   const json = sub.toJSON();
   const endpoint = json.endpoint!;
-  const p256dh = (json.keys as any)?.p256dh ?? abToB64Url(sub.getKey?.("p256dh") ?? null);
-  const auth = (json.keys as any)?.auth ?? abToB64Url(sub.getKey?.("auth") ?? null);
+  const p256dh =
+    (json.keys as any)?.p256dh ?? abToB64Url(sub.getKey?.("p256dh") ?? null);
+  const auth =
+    (json.keys as any)?.auth ?? abToB64Url(sub.getKey?.("auth") ?? null);
 
-  const { error } = await supabase.from("push_subscriptions").upsert(
-    { user_id: userId, endpoint, p256dh, auth, user_agent: navigator.userAgent },
-    { onConflict: "endpoint" },
-  );
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .upsert(
+      {
+        user_id: userId,
+        endpoint,
+        p256dh,
+        auth,
+        user_agent: navigator.userAgent,
+      },
+      { onConflict: "endpoint" },
+    );
   if (error) return { ok: false, reason: error.message };
   return { ok: true };
 }
@@ -88,7 +108,10 @@ export async function disablePush(): Promise<void> {
   const reg = await navigator.serviceWorker.getRegistration("/");
   const sub = await reg?.pushManager.getSubscription();
   if (sub) {
-    await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+    await supabase
+      .from("push_subscriptions")
+      .delete()
+      .eq("endpoint", sub.endpoint);
     await sub.unsubscribe();
   }
 }
