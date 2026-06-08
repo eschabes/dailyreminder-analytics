@@ -31,10 +31,7 @@ function abToB64Url(buf: ArrayBuffer | null) {
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function keysMatch(
-  a: ArrayBuffer | null | undefined,
-  b: Uint8Array,
-) {
+function keysMatch(a: ArrayBuffer | null | undefined, b: Uint8Array) {
   if (!a) return false;
   const current = new Uint8Array(a);
   if (current.byteLength !== b.byteLength) return false;
@@ -105,18 +102,16 @@ export async function enablePush(
   const auth =
     (json.keys as any)?.auth ?? abToB64Url(sub.getKey?.("auth") ?? null);
 
-  const { error } = await supabase
-    .from("push_subscriptions")
-    .upsert(
-      {
-        user_id: userId,
-        endpoint,
-        p256dh,
-        auth,
-        user_agent: navigator.userAgent,
-      },
-      { onConflict: "endpoint" },
-    );
+  const { error } = await supabase.from("push_subscriptions").upsert(
+    {
+      user_id: userId,
+      endpoint,
+      p256dh,
+      auth,
+      user_agent: navigator.userAgent,
+    },
+    { onConflict: "endpoint" },
+  );
   if (error) return { ok: false, reason: error.message };
   return { ok: true };
 }
