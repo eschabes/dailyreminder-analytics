@@ -1,6 +1,6 @@
 {
-  "name": "WeeklyTrack",
-  "short_name": "WeeklyTrack",
+  "name": "TrackrDaily",
+  "short_name": "TrackrDaily",
   "description": "Track fitness routines, intervals, and sets across the week",
   "start_url": "/",
   "scope": "/",
