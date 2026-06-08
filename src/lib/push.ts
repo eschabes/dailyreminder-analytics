@@ -9,6 +9,10 @@ export const pushSupported = () =>
   "PushManager" in window &&
   "Notification" in window;
 
+type EnablePushOptions = {
+  forceRefresh?: boolean;
+};
+
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -22,35 +26,68 @@ function abToB64Url(buf: ArrayBuffer | null) {
   if (!buf) return "";
   const bytes = new Uint8Array(buf);
   let str = "";
-  for (let i = 0; i < bytes.byteLength; i++) str += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.byteLength; i++)
+    str += String.fromCharCode(bytes[i]);
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function keysMatch(a: ArrayBuffer | null | undefined, b: Uint8Array) {
+  if (!a) return false;
+  const current = new Uint8Array(a);
+  if (current.byteLength !== b.byteLength) return false;
+  for (let i = 0; i < current.byteLength; i++) {
+    if (current[i] !== b[i]) return false;
+  }
+  return true;
 }
 
 export async function registerPushSW(): Promise<ServiceWorkerRegistration | null> {
   if (!pushSupported()) return null;
   try {
-    return await navigator.serviceWorker.register("/push-sw.js", { scope: "/" });
+    return await navigator.serviceWorker.register("/push-sw.js", {
+      scope: "/",
+    });
   } catch (e) {
     console.error("SW register failed", e);
     return null;
   }
 }
 
-export async function enablePush(): Promise<{ ok: boolean; reason?: string }> {
-  if (!pushSupported()) return { ok: false, reason: "Push not supported in this browser." };
+export async function enablePush(
+  options: EnablePushOptions = {},
+): Promise<{ ok: boolean; reason?: string }> {
+  if (!pushSupported())
+    return { ok: false, reason: "Push not supported in this browser." };
 
   const permission = await Notification.requestPermission();
-  if (permission !== "granted") return { ok: false, reason: "Notification permission denied." };
+  if (permission !== "granted")
+    return { ok: false, reason: "Notification permission denied." };
 
-  const reg = (await navigator.serviceWorker.getRegistration("/")) || (await registerPushSW());
+  const reg =
+    (await navigator.serviceWorker.getRegistration("/")) ||
+    (await registerPushSW());
   if (!reg) return { ok: false, reason: "Could not register service worker." };
   await navigator.serviceWorker.ready;
 
+  const serverKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
   let sub = await reg.pushManager.getSubscription();
+  const staleKey =
+    !!sub && !keysMatch(sub.options?.applicationServerKey ?? null, serverKey);
+
+  if (sub && (options.forceRefresh || staleKey)) {
+    await supabase
+      .from("push_subscriptions")
+      .delete()
+      .eq("endpoint", sub.endpoint);
+    await sub.unsubscribe();
+    sub = null;
+  }
+
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      applicationServerKey: serverKey,
     });
   }
 
@@ -60,11 +97,19 @@ export async function enablePush(): Promise<{ ok: boolean; reason?: string }> {
 
   const json = sub.toJSON();
   const endpoint = json.endpoint!;
-  const p256dh = (json.keys as any)?.p256dh ?? abToB64Url(sub.getKey?.("p256dh") ?? null);
-  const auth = (json.keys as any)?.auth ?? abToB64Url(sub.getKey?.("auth") ?? null);
+  const p256dh =
+    (json.keys as any)?.p256dh ?? abToB64Url(sub.getKey?.("p256dh") ?? null);
+  const auth =
+    (json.keys as any)?.auth ?? abToB64Url(sub.getKey?.("auth") ?? null);
 
   const { error } = await supabase.from("push_subscriptions").upsert(
-    { user_id: userId, endpoint, p256dh, auth, user_agent: navigator.userAgent },
+    {
+      user_id: userId,
+      endpoint,
+      p256dh,
+      auth,
+      user_agent: navigator.userAgent,
+    },
     { onConflict: "endpoint" },
   );
   if (error) return { ok: false, reason: error.message };
@@ -76,7 +121,10 @@ export async function disablePush(): Promise<void> {
   const reg = await navigator.serviceWorker.getRegistration("/");
   const sub = await reg?.pushManager.getSubscription();
   if (sub) {
-    await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+    await supabase
+      .from("push_subscriptions")
+      .delete()
+      .eq("endpoint", sub.endpoint);
     await sub.unsubscribe();
   }
 }
@@ -85,5 +133,9 @@ export async function isPushEnabled(): Promise<boolean> {
   if (!pushSupported() || Notification.permission !== "granted") return false;
   const reg = await navigator.serviceWorker.getRegistration("/");
   const sub = await reg?.pushManager.getSubscription();
-  return !!sub;
+  if (!sub) return false;
+  return keysMatch(
+    sub.options?.applicationServerKey ?? null,
+    urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+  );
 }
