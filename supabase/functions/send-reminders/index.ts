@@ -9,6 +9,7 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const rawVapidSubject = Deno.env.get("VAPID_SUBJECT") ?? "reminders@trackrdaily.app";
+const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 
 function normalizeVapidSubject(input: string) {
   const trimmed = input.trim();
@@ -118,6 +119,30 @@ Deno.serve(async (req) => {
   const now = new Date();
   const isTest =
     url.searchParams.get("test") === "1" || req.headers.get("x-test") === "1";
+
+  // Authenticate the scheduled (non-test) path with a shared secret so external
+  // callers cannot trigger the notification loop or suppress reminders by
+  // bumping last_sent_date prematurely.
+  if (!isTest) {
+    if (!CRON_SECRET) {
+      return new Response(
+        JSON.stringify({ error: "CRON_SECRET is not configured" }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    const provided =
+      req.headers.get("x-cron-secret") ??
+      (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    if (provided !== CRON_SECRET) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
 
   // Instant test mode: push to every subscription for the calling user, ignoring schedule
   if (isTest) {
