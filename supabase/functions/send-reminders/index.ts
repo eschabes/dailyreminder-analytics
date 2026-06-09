@@ -20,6 +20,12 @@ const VAPID_SUBJECT =
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
+function shouldDeleteSubscription(statusCode?: number, body?: string) {
+  if (statusCode === 404 || statusCode === 410) return true;
+  if (statusCode !== 403) return false;
+  return !(body?.includes("BadJwtToken") || body?.includes("BadJwtHeader"));
+}
+
 const ENCOURAGEMENTS = [
   "You've got this — knock out a task or two!",
   "A small step now is still progress. Jump in!",
@@ -79,10 +85,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
 
+  const url = new URL(req.url);
+  if (url.searchParams.get("config") === "1") {
+    return new Response(
+      JSON.stringify({
+        publicKey: VAPID_PUBLIC,
+        subject: VAPID_SUBJECT,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
   const now = new Date();
-
-  const url = new URL(req.url);
   const isTest =
     url.searchParams.get("test") === "1" || req.headers.get("x-test") === "1";
 
@@ -138,11 +155,7 @@ Deno.serve(async (req) => {
           body: e?.body,
           message: e?.message,
         });
-        if (
-          e?.statusCode === 403 ||
-          e?.statusCode === 404 ||
-          e?.statusCode === 410
-        ) {
+        if (shouldDeleteSubscription(e?.statusCode, e?.body)) {
           await supabase.from("push_subscriptions").delete().eq("id", sub.id);
         }
       }
@@ -250,11 +263,7 @@ Deno.serve(async (req) => {
       } catch (e: any) {
         failed++;
         // Clean up gone subscriptions
-        if (
-          e?.statusCode === 403 ||
-          e?.statusCode === 404 ||
-          e?.statusCode === 410
-        ) {
+        if (shouldDeleteSubscription(e?.statusCode, e?.body)) {
           await supabase.from("push_subscriptions").delete().eq("id", sub.id);
         }
         console.error("push failed", e?.statusCode, e?.body ?? e?.message);
