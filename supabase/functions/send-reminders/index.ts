@@ -8,15 +8,31 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const rawVapidSubject =
-  Deno.env.get("VAPID_SUBJECT") ?? "reminders@trackrdaily.app";
-const VAPID_SUBJECT =
-  rawVapidSubject.startsWith("mailto:") ||
-  rawVapidSubject.startsWith("https://")
-    ? rawVapidSubject
-    : rawVapidSubject.includes("@")
-      ? `mailto:${rawVapidSubject}`
-      : "mailto:reminders@trackrdaily.app";
+const rawVapidSubject = Deno.env.get("VAPID_SUBJECT") ?? "reminders@trackrdaily.app";
+
+function normalizeVapidSubject(input: string) {
+  const trimmed = input.trim();
+
+  if (/^https:\/\//i.test(trimmed)) {
+    try {
+      return new URL(trimmed).toString();
+    } catch {
+      return "mailto:reminders@trackrdaily.app";
+    }
+  }
+
+  const emailLike = trimmed
+    .replace(/^mailto:/i, "")
+    .replace(/[<>]/g, "")
+    .replace(/\s+/g, "")
+    .trim();
+
+  return emailLike.includes("@")
+    ? `mailto:${emailLike}`
+    : "mailto:reminders@trackrdaily.app";
+}
+
+const VAPID_SUBJECT = normalizeVapidSubject(rawVapidSubject);
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
