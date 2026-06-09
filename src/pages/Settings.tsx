@@ -24,10 +24,11 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   disablePush,
   enablePush,
+  getVapidPublicKey,
   isPushEnabled,
   pushSupported,
+  syncPushSubscription,
 } from "@/lib/push";
-import { VAPID_PUBLIC_KEY } from "@/lib/push";
 import { cn } from "@/lib/utils";
 
 type Reminder = {
@@ -52,7 +53,12 @@ const Settings = () => {
 
   useEffect(() => {
     setSupported(pushSupported());
-    isPushEnabled().then(setPushOn);
+    isPushEnabled().then(async (enabled) => {
+      if (enabled) {
+        await syncPushSubscription();
+      }
+      setPushOn(enabled);
+    });
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -118,11 +124,12 @@ const Settings = () => {
         },
       );
       const json = await res.json();
+      const vapidKey = await getVapidPublicKey();
       console.log(
         "[push test]",
         json,
         "client vapid prefix:",
-        VAPID_PUBLIC_KEY.slice(0, 16),
+        vapidKey.slice(0, 16),
       );
       if (!res.ok) {
         toast.error(json.error || "Test failed");

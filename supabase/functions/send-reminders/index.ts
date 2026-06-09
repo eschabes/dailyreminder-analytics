@@ -8,17 +8,39 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const rawVapidSubject =
-  Deno.env.get("VAPID_SUBJECT") ?? "reminders@trackrdaily.app";
-const VAPID_SUBJECT =
-  rawVapidSubject.startsWith("mailto:") ||
-  rawVapidSubject.startsWith("https://")
-    ? rawVapidSubject
-    : rawVapidSubject.includes("@")
-      ? `mailto:${rawVapidSubject}`
-      : "mailto:reminders@trackrdaily.app";
+const rawVapidSubject = Deno.env.get("VAPID_SUBJECT") ?? "reminders@trackrdaily.app";
+
+function normalizeVapidSubject(input: string) {
+  const trimmed = input.trim();
+
+  if (/^https:\/\//i.test(trimmed)) {
+    try {
+      return new URL(trimmed).toString();
+    } catch {
+      return "mailto:reminders@trackrdaily.app";
+    }
+  }
+
+  const emailLike = trimmed
+    .replace(/^mailto:/i, "")
+    .replace(/[<>]/g, "")
+    .replace(/\s+/g, "")
+    .trim();
+
+  return emailLike.includes("@")
+    ? `mailto:${emailLike}`
+    : "mailto:reminders@trackrdaily.app";
+}
+
+const VAPID_SUBJECT = normalizeVapidSubject(rawVapidSubject);
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+
+function shouldDeleteSubscription(statusCode?: number, body?: string) {
+  if (statusCode === 404 || statusCode === 410) return true;
+  if (statusCode !== 403) return false;
+  return !(body?.includes("BadJwtToken") || body?.includes("BadJwtHeader"));
+}
 
 const ENCOURAGEMENTS = [
   "You've got this — knock out a task or two!",
@@ -79,10 +101,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
 
+  const url = new URL(req.url);
+  if (url.searchParams.get("config") === "1") {
+    return new Response(
+      JSON.stringify({
+        publicKey: VAPID_PUBLIC,
+        subject: VAPID_SUBJECT,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
   const now = new Date();
-
-  const url = new URL(req.url);
   const isTest =
     url.searchParams.get("test") === "1" || req.headers.get("x-test") === "1";
 
@@ -138,11 +171,7 @@ Deno.serve(async (req) => {
           body: e?.body,
           message: e?.message,
         });
-        if (
-          e?.statusCode === 403 ||
-          e?.statusCode === 404 ||
-          e?.statusCode === 410
-        ) {
+        if (shouldDeleteSubscription(e?.statusCode, e?.body)) {
           await supabase.from("push_subscriptions").delete().eq("id", sub.id);
         }
       }
@@ -250,11 +279,7 @@ Deno.serve(async (req) => {
       } catch (e: any) {
         failed++;
         // Clean up gone subscriptions
-        if (
-          e?.statusCode === 403 ||
-          e?.statusCode === 404 ||
-          e?.statusCode === 410
-        ) {
+        if (shouldDeleteSubscription(e?.statusCode, e?.body)) {
           await supabase.from("push_subscriptions").delete().eq("id", sub.id);
         }
         console.error("push failed", e?.statusCode, e?.body ?? e?.message);
