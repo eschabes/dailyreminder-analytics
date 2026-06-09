@@ -1,7 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export const VAPID_PUBLIC_KEY =
-  "BOeKW2iTgsDjcMMKEzJrrUa-f51DSrSdt3QAPmwAMTXWIftC9TO7iee01UUhiymPJMr7Wbaq4mqqz3ZZCBTWXEU";
+const PUSH_CONFIG_URL =
+  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-reminders?config=1`;
+
+let cachedVapidPublicKey: string | null = null;
 
 export const pushSupported = () =>
   typeof window !== "undefined" &&
@@ -41,6 +43,48 @@ function keysMatch(a: ArrayBuffer | null | undefined, b: Uint8Array) {
   return true;
 }
 
+async function upsertSubscription(userId: string, sub: PushSubscription) {
+  const json = sub.toJSON();
+  const endpoint = json.endpoint!;
+  const p256dh =
+    (json.keys as any)?.p256dh ?? abToB64Url(sub.getKey?.("p256dh") ?? null);
+  const auth =
+    (json.keys as any)?.auth ?? abToB64Url(sub.getKey?.("auth") ?? null);
+
+  return supabase.from("push_subscriptions").upsert(
+    {
+      user_id: userId,
+      endpoint,
+      p256dh,
+      auth,
+      user_agent: navigator.userAgent,
+    },
+    { onConflict: "endpoint" },
+  );
+}
+
+export async function getVapidPublicKey(forceRefresh = false): Promise<string> {
+  if (cachedVapidPublicKey && !forceRefresh) return cachedVapidPublicKey;
+
+  const res = await fetch(PUSH_CONFIG_URL, {
+    headers: {
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Could not load notification configuration.");
+  }
+
+  const json = await res.json();
+  if (!json?.publicKey) {
+    throw new Error("Notification configuration is missing a public key.");
+  }
+
+  cachedVapidPublicKey = json.publicKey;
+  return cachedVapidPublicKey;
+}
+
 export async function registerPushSW(): Promise<ServiceWorkerRegistration | null> {
   if (!pushSupported()) return null;
   try {
@@ -63,13 +107,19 @@ export async function enablePush(
   if (permission !== "granted")
     return { ok: false, reason: "Notification permission denied." };
 
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+  if (!userId) return { ok: false, reason: "Not signed in." };
+
   const reg =
     (await navigator.serviceWorker.getRegistration("/")) ||
     (await registerPushSW());
   if (!reg) return { ok: false, reason: "Could not register service worker." };
   await navigator.serviceWorker.ready;
 
-  const serverKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+  const serverKey = urlBase64ToUint8Array(
+    await getVapidPublicKey(options.forceRefresh),
+  );
 
   let sub = await reg.pushManager.getSubscription();
   const staleKey =
@@ -91,29 +141,39 @@ export async function enablePush(
     });
   }
 
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id;
-  if (!userId) return { ok: false, reason: "Not signed in." };
-
-  const json = sub.toJSON();
-  const endpoint = json.endpoint!;
-  const p256dh =
-    (json.keys as any)?.p256dh ?? abToB64Url(sub.getKey?.("p256dh") ?? null);
-  const auth =
-    (json.keys as any)?.auth ?? abToB64Url(sub.getKey?.("auth") ?? null);
-
-  const { error } = await supabase.from("push_subscriptions").upsert(
-    {
-      user_id: userId,
-      endpoint,
-      p256dh,
-      auth,
-      user_agent: navigator.userAgent,
-    },
-    { onConflict: "endpoint" },
-  );
+  const { error } = await upsertSubscription(userId, sub);
   if (error) return { ok: false, reason: error.message };
   return { ok: true };
+}
+
+export async function syncPushSubscription(): Promise<boolean> {
+  if (!pushSupported() || Notification.permission !== "granted") return false;
+
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+  if (!userId) return false;
+
+  const reg =
+    (await navigator.serviceWorker.getRegistration("/")) ||
+    (await registerPushSW());
+  if (!reg) return false;
+  await navigator.serviceWorker.ready;
+
+  const sub = await reg.pushManager.getSubscription();
+  if (!sub) return false;
+
+  const serverKey = urlBase64ToUint8Array(await getVapidPublicKey());
+  if (!keysMatch(sub.options?.applicationServerKey ?? null, serverKey)) {
+    return false;
+  }
+
+  const { error } = await upsertSubscription(userId, sub);
+  if (error) {
+    console.error("Push subscription sync failed", error);
+    return false;
+  }
+
+  return true;
 }
 
 export async function disablePush(): Promise<void> {
@@ -136,6 +196,6 @@ export async function isPushEnabled(): Promise<boolean> {
   if (!sub) return false;
   return keysMatch(
     sub.options?.applicationServerKey ?? null,
-    urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    urlBase64ToUint8Array(await getVapidPublicKey()),
   );
 }
