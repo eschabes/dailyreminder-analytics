@@ -10,6 +10,7 @@ const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const rawVapidSubject = Deno.env.get("VAPID_SUBJECT") ?? "reminders@trackrdaily.app";
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
+const CRON_SECRET_SETTING_KEY = "send_reminders_cron_secret";
 
 function normalizeVapidSubject(input: string) {
   const trimmed = input.trim();
@@ -98,6 +99,21 @@ function isTaskDueToday(task: any, todayStr: string): boolean {
   return daysBetween(todayStr, last) >= task.interval;
 }
 
+async function getStoredCronSecret(supabase: ReturnType<typeof createClient>) {
+  const { data, error } = await supabase
+    .from("app_private_settings")
+    .select("value")
+    .eq("key", CRON_SECRET_SETTING_KEY)
+    .maybeSingle();
+
+  if (error) {
+    console.error("cron secret lookup failed", error.message);
+    return "";
+  }
+
+  return data?.value ?? "";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
@@ -124,7 +140,8 @@ Deno.serve(async (req) => {
   // callers cannot trigger the notification loop or suppress reminders by
   // bumping last_sent_date prematurely.
   if (!isTest) {
-    if (!CRON_SECRET) {
+    const storedCronSecret = await getStoredCronSecret(supabase);
+    if (!CRON_SECRET && !storedCronSecret) {
       return new Response(
         JSON.stringify({ error: "CRON_SECRET is not configured" }),
         {
@@ -136,7 +153,8 @@ Deno.serve(async (req) => {
     const provided =
       req.headers.get("x-cron-secret") ??
       (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-    if (provided !== CRON_SECRET) {
+    const validSecrets = [CRON_SECRET, storedCronSecret].filter(Boolean);
+    if (!validSecrets.includes(provided)) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
